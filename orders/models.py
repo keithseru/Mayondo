@@ -25,7 +25,7 @@ class Order(models.Model):
     STATUS_CHOICES = [
         ('PENDING', 'Pending'),
         ('DELIVERED', 'Delivered'),
-        ('PARTIAL', 'PArtially Delivered'),
+        ('PARTIAL', 'Partially Delivered'),
         ('CANCELLED', 'Cancelled'),
     ]
     
@@ -41,7 +41,7 @@ class Order(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
-        ordering = ['-oreder_date']
+        ordering = ['-order_date']
     
     def __str__(self):
         return f'Order #{self.id} - {self.supplier.name}'

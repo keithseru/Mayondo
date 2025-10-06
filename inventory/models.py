@@ -26,7 +26,7 @@ class StockEntry(models.Model):
     class Meta:
         ordering = ['-entry_date']
         verbose_name = 'StockEntry'
-        verbose_plural = 'Stock Entries'
+        verbose_name_plural = 'Stock Entries'
         
     def __str__(self):
         sign = '+' if self.quantity > 0 else ''
