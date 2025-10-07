@@ -104,7 +104,7 @@ class SaleItemForm(forms.ModelForm):
             return cleaned_data
 
 # Formse for sale items
-SaleItemFormset = inlineformset_factory(
+SaleItemFormSet = inlineformset_factory(
     Sale,
     SaleItem,
     form = SaleItemForm,
