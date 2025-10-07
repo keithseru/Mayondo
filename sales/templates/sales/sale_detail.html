@@ -1,0 +1,209 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Sale #{{ sale.id }} - MayondoWood{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1><i class="bi bi-receipt"></i> Sale #{{ sale.id }}</h1>
+            <p class="text-muted mb-0">{{ sale.sale_date|date:"F d, Y H:i" }}</p>
+        </div>
+        <div>
+            <a href="{% url 'sales:sale_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back to List
+            </a>
+            {% if sale.status == 'PENDING' %}
+            <a href="{% url 'sales:complete_sale' sale.pk %}" class="btn btn-success">
+                <i class="bi bi-check-circle"></i> Complete Sale
+            </a>
+            {% endif %}
+            {% if user.role == 'MANAGER' and sale.status != 'CANCELLED' %}
+            <a href="{% url 'sales:cancel_sale' sale.pk %}" class="btn btn-danger">
+                <i class="bi bi-x-circle"></i> Cancel
+            </a>
+            {% endif %}
+            <button onclick="window.print()" class="btn btn-outline-primary btn-print no-print">
+                <i class="bi bi-printer"></i> Print
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Sale Information -->
+    <div class="col-lg-8 mb-4">
+        <!-- Customer Info -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-person"></i> Customer Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-2"><strong>Name:</strong> {{ sale.customer.full_name }}</p>
+                        <p class="mb-2"><strong>Phone:</strong> {{ sale.customer.phone|default:"-" }}</p>
+                        <p class="mb-2"><strong>Email:</strong> {{ sale.customer.email|default:"-" }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-2"><strong>Address:</strong></p>
+                        <p class="text-muted">{{ sale.customer.address|default:"No address provided" }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sale Items -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-bag"></i> Items</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th class="text-center">Quantity</th>
+                                <th class="text-end">Unit Price</th>
+                                <th class="text-center">Discount</th>
+                                <th class="text-end">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in sale.items.all %}
+                            <tr>
+                                <td>
+                                    <strong>{{ item.product_variant.product.name }}</strong><br>
+                                    <small class="text-muted">{{ item.product_variant.variant_name }}</small>
+                                </td>
+                                <td class="text-center">{{ item.quantity }}</td>
+                                <td class="text-end">UGX {{ item.unit_price|floatformat:0 }}</td>
+                                <td class="text-center">
+                                    {% if item.discount_percentage > 0 %}
+                                        <span class="badge bg-success">{{ item.discount_percentage }}%</span>
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td class="text-end"><strong>UGX {{ item.total_price|floatformat:0 }}</strong></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot class="table-light">
+                            <tr>
+                                <td colspan="4" class="text-end"><strong>Subtotal:</strong></td>
+                                <td class="text-end"><strong>UGX {{ sale.subtotal|floatformat:0 }}</strong></td>
+                            </tr>
+                            {% if sale.delivery_required %}
+                            <tr>
+                                <td colspan="4" class="text-end">
+                                    <strong>Delivery Fee (5%):</strong>
+                                    <i class="bi bi-truck text-warning ms-1"></i>
+                                </td>
+                                <td class="text-end"><strong>UGX {{ sale.delivery_fee|floatformat:0 }}</strong></td>
+                            </tr>
+                            {% endif %}
+                            <tr class="table-success">
+                                <td colspan="4" class="text-end"><strong>TOTAL:</strong></td>
+                                <td class="text-end">
+                                    <h5 class="mb-0 text-success">UGX {{ sale.total|floatformat:0 }}</h5>
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sale Summary -->
+    <div class="col-lg-4">
+        <!-- Status Card -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Sale Summary</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="text-muted small">Status</label>
+                    <div>
+                        <span class="badge badge-{{ sale.status|lower }} fs-6">
+                            {{ sale.get_status_display }}
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="text-muted small">Payment Method</label>
+                    <div><strong>{{ sale.get_payment_method_display }}</strong></div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="text-muted small">Delivery Required</label>
+                    <div>
+                        {% if sale.delivery_required %}
+                            <span class="badge bg-warning text-dark">
+                                <i class="bi bi-truck"></i> Yes
+                            </span>
+                        {% else %}
+                            <span class="badge bg-secondary">No</span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="text-muted small">Created By</label>
+                    <div>
+                        <i class="bi bi-person-circle"></i> 
+                        {{ sale.created_by.get_full_name|default:sale.created_by.username }}
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="text-muted small">Created On</label>
+                    <div>{{ sale.sale_date|date:"F d, Y H:i" }}</div>
+                </div>
+                
+                {% if sale.notes %}
+                <div class="mb-0">
+                    <label class="text-muted small">Notes</label>
+                    <div class="alert alert-info p-2 mb-0">
+                        <small>{{ sale.notes }}</small>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Quick Stats -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Quick Stats</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">Total Items:</span>
+                    <strong>{{ sale.item_count }}</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">Subtotal:</span>
+                    <strong>UGX {{ sale.subtotal|floatformat:0 }}</strong>
+                </div>
+                {% if sale.delivery_required %}
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">Delivery:</span>
+                    <strong class="text-warning">UGX {{ sale.delivery_fee|floatformat:0 }}</strong>
+                </div>
+                {% endif %}
+                <hr>
+                <div class="d-flex justify-content-between">
+                    <span class="text-muted"><strong>Total:</strong></span>
+                    <h5 class="text-success mb-0">UGX {{ sale.total|floatformat:0 }}</h5>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

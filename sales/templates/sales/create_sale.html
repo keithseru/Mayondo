@@ -1,0 +1,257 @@
+{% extends 'base.html' %}
+{% load static crispy_forms_tags %}
+
+{% block title %}Create Sale - MayondoWood{% endblock %}
+
+{% block extra_css %}
+<style>
+    .formset-row {
+        background-color: #f8f9fa;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-radius: 0.375rem;
+        border: 1px solid #dee2e6;
+    }
+    .formset-row.to-delete {
+        opacity: 0.5;
+        background-color: #f8d7da;
+    }
+    .delete-row {
+        cursor: pointer;
+        color: #dc3545;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1><i class="bi bi-plus-circle"></i> Create New Sale</h1>
+            <p class="text-muted mb-0">Record a new sale transaction</p>
+        </div>
+        <div>
+            <a href="{% url 'sales:sale_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Cancel
+            </a>
+        </div>
+    </div>
+</div>
+
+<form method="post" id="saleForm">
+    {% csrf_token %}
+    
+    <div class="row">
+        <!-- Sale Details -->
+        <div class="col-lg-8">
+            <!-- Customer Selection -->
+            <div class="card mb-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-person"></i> Customer Information</h5>
+                    <a href="{% url 'sales:create_customer' %}?next=sale" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-plus"></i> New Customer
+                    </a>
+                </div>
+                <div class="card-body">
+                    {{ form.customer|as_crispy_field }}
+                </div>
+            </div>
+            
+            <!-- Sale Items -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-bag"></i> Sale Items</h5>
+                </div>
+                <div class="card-body">
+                    {{ formset.management_form }}
+                    
+                    <div id="formset-container">
+                        {% for form in formset %}
+                        <div class="formset-row">
+                            <div class="d-flex justify-content-between mb-2">
+                                <h6>Item #{{ forloop.counter }}</h6>
+                                {% if not forloop.first %}
+                                <span class="delete-row" onclick="deleteRow(this)">
+                                    <i class="bi bi-trash"></i> Remove
+                                </span>
+                                {% endif %}
+                            </div>
+                            
+                            {{ form.id }}
+                            {{ form.DELETE }}
+                            
+                            <div class="row">
+                                <div class="col-md-5">
+                                    {{ form.product_variant|as_crispy_field }}
+                                </div>
+                                <div class="col-md-2">
+                                    {{ form.quantity|as_crispy_field }}
+                                </div>
+                                <div class="col-md-3">
+                                    {{ form.unit_price|as_crispy_field }}
+                                </div>
+                                <div class="col-md-2">
+                                    {{ form.discount_percentage|as_crispy_field }}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <button type="button" class="btn btn-outline-primary btn-sm" id="addItem">
+                        <i class="bi bi-plus-circle"></i> Add Another Item
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sale Options -->
+        <div class="col-lg-4">
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-gear"></i> Sale Options</h5>
+                </div>
+                <div class="card-body">
+                    {{ form.payment_method|as_crispy_field }}
+                    
+                    <div class="form-check mb-3">
+                        {{ form.delivery_required }}
+                        <label class="form-check-label" for="{{ form.delivery_required.id_for_label }}">
+                            <i class="bi bi-truck"></i> Delivery Required (5% fee)
+                        </label>
+                    </div>
+                    
+                    {{ form.notes|as_crispy_field }}
+                </div>
+            </div>
+            
+            <!-- Summary -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-calculator"></i> Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Subtotal:</span>
+                        <strong id="subtotal">UGX 0</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2" id="deliveryRow" style="display: none;">
+                        <span class="text-muted">Delivery (5%):</span>
+                        <strong id="deliveryFee" class="text-warning">UGX 0</strong>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between">
+                        <span><strong>Total:</strong></span>
+                        <h5 class="text-success mb-0" id="grandTotal">UGX 0</h5>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="d-grid gap-2 mt-3">
+                <button type="submit" class="btn btn-success btn-lg">
+                    <i class="bi bi-check-circle"></i> Create Sale
+                </button>
+                <a href="{% url 'sales:sale_list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-circle"></i> Cancel
+                </a>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Add item functionality
+    document.getElementById('addItem').addEventListener('click', function() {
+        const totalForms = document.querySelector('#id_items-TOTAL_FORMS');
+        const currentForms = parseInt(totalForms.value);
+        
+        // Clone the first formset item
+        const formsetContainer = document.getElementById('formset-container');
+        const firstForm = formsetContainer.querySelector('.formset-row');
+        const newForm = firstForm.cloneNode(true);
+        
+        // Update form index
+        const regex = new RegExp('items-(\\d+)-', 'g');
+        newForm.innerHTML = newForm.innerHTML.replace(regex, `items-${currentForms}-`);
+        
+        // Clear values
+        newForm.querySelectorAll('input, select, textarea').forEach(input => {
+            if (input.type !== 'hidden') {
+                input.value = '';
+            }
+        });
+        
+        // Update item number
+        newForm.querySelector('h6').textContent = `Item #${currentForms + 1}`;
+        
+        // Append new form
+        formsetContainer.appendChild(newForm);
+        
+        // Update total forms count
+        totalForms.value = currentForms + 1;
+    });
+    
+    // Delete row functionality
+    function deleteRow(button) {
+        const row = button.closest('.formset-row');
+        const deleteCheckbox = row.querySelector('input[name$="-DELETE"]');
+        
+        if (deleteCheckbox) {
+            deleteCheckbox.checked = true;
+            row.classList.add('to-delete');
+            row.style.display = 'none';
+        }
+    }
+    
+    // Update totals
+    function updateTotals() {
+        let subtotal = 0;
+        
+        document.querySelectorAll('.formset-row:not(.to-delete)').forEach(row => {
+            const quantity = parseFloat(row.querySelector('input[name$="-quantity"]')?.value) || 0;
+            const unitPrice = parseFloat(row.querySelector('input[name$="-unit_price"]')?.value) || 0;
+            const discount = parseFloat(row.querySelector('input[name$="-discount_percentage"]')?.value) || 0;
+            
+            const itemTotal = quantity * unitPrice * (1 - discount / 100);
+            subtotal += itemTotal;
+        });
+        
+        const deliveryRequired = document.querySelector('input[name="delivery_required"]').checked;
+        const deliveryFee = deliveryRequired ? Math.round(subtotal * 0.05) : 0;
+        const total = subtotal + deliveryFee;
+        
+        document.getElementById('subtotal').textContent = `UGX ${Math.round(subtotal).toLocaleString()}`;
+        document.getElementById('deliveryFee').textContent = `UGX ${deliveryFee.toLocaleString()}`;
+        document.getElementById('grandTotal').textContent = `UGX ${Math.round(total).toLocaleString()}`;
+        
+        const deliveryRow = document.getElementById('deliveryRow');
+        deliveryRow.style.display = deliveryRequired ? 'flex' : 'none';
+    }
+    
+    // Event listeners
+    document.addEventListener('input', updateTotals);
+    document.addEventListener('change', updateTotals);
+    
+    // Auto-fill unit price when variant is selected
+    document.addEventListener('change', function(e) {
+        if (e.target.name && e.target.name.includes('product_variant')) {
+            const row = e.target.closest('.formset-row');
+            const priceInput = row.querySelector('input[name$="-unit_price"]');
+            const selectedOption = e.target.options[e.target.selectedIndex];
+            
+            // Extract price from option text (format: "Product - Variant (UGX 10,000, Stock: 5)")
+            const priceMatch = selectedOption.text.match(/UGX ([\d,]+)/);
+            if (priceMatch && priceInput) {
+                const price = priceMatch[1].replace(/,/g, '');
+                priceInput.value = price;
+                updateTotals();
+            }
+        }
+    });
+    
+    // Initial calculation
+    updateTotals();
+</script>
+{% endblock %}
