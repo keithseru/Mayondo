@@ -1,0 +1,114 @@
+{% load static %}
+<nav class="col-md-2 d-none d-md-block sidebar">
+    <div class="position-sticky pt-3">
+        <!-- Dashboard Link -->
+        <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-2 mb-1 text-muted">
+            <span>DASHBOARD</span>
+        </h6>
+        <ul class="nav flex-column mb-2">
+            <li class="nav-item">
+                <a class="nav-link {% if 'dashboard' in request.path %}active{% endif %}" 
+                   href="{% url 'dashboard_router' %}">
+                    <i class="bi bi-speedometer2"></i> Overview
+                </a>
+            </li>
+        </ul>
+        
+        <!-- Quick Actions -->
+        <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+            <span>QUICK ACTIONS</span>
+        </h6>
+        <ul class="nav flex-column">
+            {% if user.role in 'MANAGER,SALES' %}
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'sales:create_sale' %}">
+                    <i class="bi bi-plus-circle-fill text-success"></i> New Sale
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'sales:create_customer' %}">
+                    <i class="bi bi-person-plus-fill text-info"></i> New Customer
+                </a>
+            </li>
+            {% endif %}
+            
+            {% if user.role == 'MANAGER' %}
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'orders:create_order' %}">
+                    <i class="bi bi-bag-plus-fill text-primary"></i> New Order
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'products:create_product' %}">
+                    <i class="bi bi-box-seam text-warning"></i> New Product
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'orders:create_supplier' %}">
+                    <i class="bi bi-shop text-secondary"></i> New Supplier
+                </a>
+            </li>
+            {% endif %}
+            
+            {% if user.role in 'MANAGER,INVENTORY' %}
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'inventory:stock_entry' %}">
+                    <i class="bi bi-clipboard-plus text-danger"></i> Stock Entry
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+        
+        <!-- Reports -->
+        <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+            <span>REPORTS</span>
+        </h6>
+        <ul class="nav flex-column mb-2">
+            {% if user.role == 'MANAGER' %}
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'reports' and 'manager' in request.path %}active{% endif %}" 
+                   href="{% url 'manager:reports' %}">
+                    <i class="bi bi-graph-up"></i> Manager Reports
+                </a>
+            </li>
+            {% endif %}
+            
+            {% if user.role in 'MANAGER,SALES' %}
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'reports' and 'sales' in request.path %}active{% endif %}" 
+                   href="{% url 'sales:reports' %}">
+                    <i class="bi bi-bar-chart-line"></i> Sales Reports
+                </a>
+            </li>
+            {% endif %}
+            
+            {% if user.role in 'MANAGER,INVENTORY' %}
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'reports' and 'inventory' in request.path %}active{% endif %}" 
+                   href="{% url 'inventory:reports' %}">
+                    <i class="bi bi-clipboard-data"></i> Inventory Reports
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+        
+        <!-- Settings -->
+        {% if user.role == 'MANAGER' %}
+        <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+            <span>SETTINGS</span>
+        </h6>
+        <ul class="nav flex-column mb-2">
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'products:category_unit_list' %}">
+                    <i class="bi bi-gear"></i> Categories & Units
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'orders:supplier_list' %}">
+                    <i class="bi bi-shop"></i> Suppliers
+                </a>
+            </li>
+        </ul>
+        {% endif %}
+    </div>
+</nav>
