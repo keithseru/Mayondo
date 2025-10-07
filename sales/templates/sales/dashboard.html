@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Sales Dashboard - MayondoWood{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1><i class="bi bi-cart-check"></i> Sales Dashboard</h1>
+            <p class="text-muted mb-0">Sales overview and recent activity</p>
+        </div>
+        <div>
+            <a href="{% url 'sales:create_sale' %}" class="btn btn-success">
+                <i class="bi bi-plus-circle"></i> New Sale
+            </a>
+            <a href="{% url 'sales:reports' %}" class="btn btn-outline-primary">
+                <i class="bi bi-graph-up"></i> Reports
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card success h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="stat-label mb-2">Today's Sales</p>
+                        <h2 class="stat-value mb-1">{{ today_sales_count }}</h2>
+                        <small class="text-success">UGX {{ today_revenue|floatformat:0 }}</small>
+                    </div>
+                    <i class="bi bi-calendar-check stat-icon"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card stat-card primary h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="stat-label mb-2">This Month</p>
+                        <h2 class="stat-value mb-1">{{ month_sales_count }}</h2>
+                        <small class="text-primary">UGX {{ month_revenue|floatformat:0 }}</small>
+                    </div>
+                    <i class="bi bi-graph-up-arrow stat-icon"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card stat-card warning h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="stat-label mb-2">Pending Sales</p>
+                        <h2 class="stat-value mb-1">{{ pending_sales }}</h2>
+                        <small class="text-muted">Need completion</small>
+                    </div>
+                    <i class="bi bi-hourglass-split stat-icon"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card stat-card info h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="stat-label mb-2">Average Sale</p>
+                        <h2 class="stat-value mb-1">
+                            {% if month_sales_count > 0 %}
+                                {{ month_revenue|floatformat:0|default:"0"|slice:":3" }}K
+                            {% else %}
+                                0
+                            {% endif %}
+                        </h2>
+                        <small class="text-muted">This month</small>
+                    </div>
+                    <i class="bi bi-calculator stat-icon"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Sales -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="bi bi-clock-history"></i> Recent Sales</h5>
+        <a href="{% url 'sales:sale_list' %}" class="btn btn-sm btn-outline-primary">View All Sales</a>
+    </div>
+    <div class="card-body p-0">
+        {% if recent_sales %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Customer</th>
+                        <th>Date</th>
+                        <th>Items</th>
+                        <th>Total</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sale in recent_sales %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'sales:sale_detail' sale.pk %}" class="text-decoration-none">
+                                #{{ sale.id }}
+                            </a>
+                        </td>
+                        <td>{{ sale.customer.full_name }}</td>
+                        <td>{{ sale.sale_date|date:"M d, Y H:i" }}</td>
+                        <td>{{ sale.item_count }} item{{ sale.item_count|pluralize }}</td>
+                        <td><strong>UGX {{ sale.total|floatformat:0 }}</strong></td>
+                        <td>
+                            <span class="badge badge-{{ sale.status|lower }}">
+                                {{ sale.get_status_display }}
+                            </span>
+                        </td>
+                        <td class="text-end">
+                            <a href="{% url 'sales:sale_detail' sale.pk %}" 
+                               class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state py-5">
+            <i class="bi bi-inbox d-block"></i>
+            <p class="mb-3">No sales recorded yet</p>
+            <a href="{% url 'sales:create_sale' %}" class="btn btn-success">
+                <i class="bi bi-plus-circle"></i> Create First Sale
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

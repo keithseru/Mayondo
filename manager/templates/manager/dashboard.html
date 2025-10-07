@@ -1,0 +1,341 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Manager Dashboard - MayondoWood{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1><i class="bi bi-speedometer2"></i> Manager Dashboard</h1>
+            <p class="text-muted mb-0">Overview of business operations</p>
+        </div>
+        <div>
+            <a href="{% url 'manager:reports' %}" class="btn btn-outline-primary">
+                <i class="bi bi-graph-up"></i> View Reports
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row g-3 mb-4">
+    <!-- Today's Sales -->
+    <div class="col-md-3">
+        <div class="card stat-card success h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="stat-label mb-2">Today's Sales</p>
+                        <h2 class="stat-value mb-1">{{ today_sales }}</h2>
+                        <small class="text-muted">UGX {{ today_revenue|floatformat:0 }}</small>
+                    </div>
+                    <i class="bi bi-cart-check stat-icon"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Week Sales -->
+    <div class="col-md-3">
+        <div class="card stat-card primary h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="stat-label mb-2">This Week</p>
+                        <h2 class="stat-value mb-1">{{ week_sales }}</h2>
+                        <small class="text-muted">UGX {{ week_revenue|floatformat:0 }}</small>
+                    </div>
+                    <i class="bi bi-graph-up stat-icon"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Month Sales -->
+    <div class="col-md-3">
+        <div class="card stat-card primary h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="stat-label mb-2">This Month</p>
+                        <h2 class="stat-value mb-1">{{ month_sales }}</h2>
+                        <small class="text-muted">UGX {{ month_revenue|floatformat:0 }}</small>
+                    </div>
+                    <i class="bi bi-calendar-month stat-icon"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Pending Sales -->
+    <div class="col-md-3">
+        <div class="card stat-card warning h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="stat-label mb-2">Pending Sales</p>
+                        <h2 class="stat-value mb-1">{{ pending_sales }}</h2>
+                        <small class="text-muted">Awaiting completion</small>
+                    </div>
+                    <i class="bi bi-hourglass-split stat-icon"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <!-- Pending Orders -->
+    <div class="col-md-3">
+        <div class="card stat-card warning h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="stat-label mb-2">Pending Orders</p>
+                        <h2 class="stat-value mb-1">{{ pending_orders }}</h2>
+                        <small class="text-muted">Awaiting delivery</small>
+                    </div>
+                    <i class="bi bi-truck stat-icon"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Low Stock Items -->
+    <div class="col-md-3">
+        <div class="card stat-card danger h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="stat-label mb-2">Low Stock</p>
+                        <h2 class="stat-value mb-1">{{ low_stock_items }}</h2>
+                        <small class="text-muted">Need reordering</small>
+                    </div>
+                    <i class="bi bi-exclamation-triangle stat-icon"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Inventory Value -->
+    <div class="col-md-3">
+        <div class="card stat-card success h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="stat-label mb-2">Inventory Value</p>
+                        <h2 class="stat-value mb-1">{{ total_products }}</h2>
+                        <small class="text-muted">UGX {{ inventory_value|floatformat:0 }}</small>
+                    </div>
+                    <i class="bi bi-boxes stat-icon"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Total Staff -->
+    <div class="col-md-3">
+        <div class="card stat-card primary h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="stat-label mb-2">Active Staff</p>
+                        <h2 class="stat-value mb-1">{{ staff_count }}</h2>
+                        <small class="text-muted">Team members</small>
+                    </div>
+                    <i class="bi bi-people stat-icon"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Recent Sales -->
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-clock-history"></i> Recent Sales</h5>
+                <a href="{% url 'sales:sale_list' %}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body p-0">
+                {% if recent_sales %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Customer</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for sale in recent_sales %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'sales:sale_detail' sale.pk %}" class="text-decoration-none">
+                                        #{{ sale.id }}
+                                    </a>
+                                </td>
+                                <td>{{ sale.customer.full_name }}</td>
+                                <td><strong>UGX {{ sale.total|floatformat:0 }}</strong></td>
+                                <td>
+                                    <span class="badge badge-{{ sale.status|lower }}">
+                                        {{ sale.get_status_display }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state py-5">
+                    <i class="bi bi-inbox d-block"></i>
+                    <p class="mb-0">No recent sales</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Orders -->
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-clock-history"></i> Recent Orders</h5>
+                <a href="{% url 'orders:order_list' %}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body p-0">
+                {% if recent_orders %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Supplier</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in recent_orders %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'orders:order_detail' order.pk %}" class="text-decoration-none">
+                                        #{{ order.id }}
+                                    </a>
+                                </td>
+                                <td>{{ order.supplier.name }}</td>
+                                <td><strong>UGX {{ order.total_amount|floatformat:0 }}</strong></td>
+                                <td>
+                                    <span class="badge badge-{{ order.status|lower }}">
+                                        {{ order.get_status_display }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state py-5">
+                    <i class="bi bi-inbox d-block"></i>
+                    <p class="mb-0">No recent orders</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Top Products -->
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-star-fill text-warning"></i> Top Selling Products</h5>
+                <small class="text-muted">This Month</small>
+            </div>
+            <div class="card-body p-0">
+                {% if top_products %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th class="text-end">Units Sold</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for product in top_products %}
+                            <tr>
+                                <td>
+                                    <strong>{{ product.product.name }}</strong><br>
+                                    <small class="text-muted">{{ product.variant_name }}</small>
+                                </td>
+                                <td class="text-end">
+                                    <span class="badge bg-success">{{ product.total_sold }}</span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state py-5">
+                    <i class="bi bi-inbox d-block"></i>
+                    <p class="mb-0">No sales data for this month</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Top Customers -->
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-trophy-fill text-warning"></i> Top Customers</h5>
+                <small class="text-muted">This Month</small>
+            </div>
+            <div class="card-body p-0">
+                {% if top_customers %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Customer</th>
+                                <th class="text-end">Total Spent</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for customer in top_customers %}
+                            <tr>
+                                <td>
+                                    <i class="bi bi-person-circle text-primary"></i>
+                                    {{ customer.full_name }}
+                                </td>
+                                <td class="text-end">
+                                    <strong class="text-success">
+                                        UGX {{ customer.total_spent|floatformat:0|default:"0" }}
+                                    </strong>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state py-5">
+                    <i class="bi bi-inbox d-block"></i>
+                    <p class="mb-0">No customer data for this month</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
