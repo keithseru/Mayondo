@@ -278,6 +278,7 @@ main {
 .page-header {
     padding-bottom: 1rem;
     margin-bottom: 1.5rem;
+    margin-top: 3rem;
     border-bottom: 2px solid var(--primary-color);
 }
 

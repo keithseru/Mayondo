@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Stock Entries - MayondoWood{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1><i class="bi bi-clipboard-data"></i> Stock Entries</h1>
+            <p class="text-muted mb-0">History of stock adjustments</p>
+        </div>
+        <div>
+            <a href="{% url 'inventory:stock_entry' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> New Entry
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label for="entry_type" class="form-label">Entry Type</label>
+                <select name="entry_type" id="entry_type" class="form-select">
+                    <option value="">All Types</option>
+                    <option value="ADDITION" {% if entry_type_filter == 'ADDITION' %}selected{% endif %}>Stock Addition</option>
+                    <option value="ADJUSTMENT" {% if entry_type_filter == 'ADJUSTMENT' %}selected{% endif %}>Stock Adjustment</option>
+                    <option value="DAMAGE" {% if entry_type_filter == 'DAMAGE' %}selected{% endif %}>Damaged Goods</option>
+                    <option value="RETURN" {% if entry_type_filter == 'RETURN' %}selected{% endif %}>Customer Return</option>
+                    <option value="CORRECTION" {% if entry_type_filter == 'CORRECTION' %}selected{% endif %}>Inventory Correction</option>
+                </select>
+            </div>
+            
+            <div class="col-md-3">
+                <label for="variant" class="form-label">Product Variant</label>
+                <select name="variant" id="variant" class="form-select">
+                    <option value="">All Variants</option>
+                    {% for variant in variants %}
+                    <option value="{{ variant.id }}" {% if variant_filter == variant.id|stringformat:"s" %}selected{% endif %}>
+                        {{ variant.product.name }} - {{ variant.variant_name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="col-md-3">
+                <label for="date_from" class="form-label">From Date</label>
+                <input type="date" name="date_from" id="date_from" class="form-control" value="{{ date_from }}">
+            </div>
+            
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary me-2">
+                    <i class="bi bi-funnel"></i> Filter
+                </button>
+                <a href="{% url 'inventory:stock_list' %}" class="btn btn-outline-secondary me-2">
+                    <i class="bi bi-x-circle"></i> Clear
+                </a>
+                <a href="?export=csv{% if entry_type_filter %}&entry_type={{ entry_type_filter }}{% endif %}{% if variant_filter %}&variant={{ variant_filter }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}" 
+                   class="btn btn-outline-success">
+                    <i class="bi bi-file-earmark-spreadsheet"></i> CSV
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Entries Table -->
+<div class="card">
+    <div class="card-body">
+        {% if page_obj %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Product</th>
+                        <th>Variant</th>
+                        <th>Type</th>
+                        <th class="text-end">Quantity</th>
+                        <th>Entered By</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in page_obj %}
+                    <tr>
+                        <td>{{ entry.entry_date|date:"M d, Y H:i" }}</td>
+                        <td><strong>{{ entry.variant.product.name }}</strong></td>
+                        <td>{{ entry.variant.variant_name }}</td>
+                        <td>
+                            <span class="badge bg-secondary">
+                                {{ entry.get_entry_type_display }}
+                            </span>
+                        </td>
+                        <td class="text-end">
+                            <span class="{% if entry.quantity > 0 %}text-success{% else %}text-danger{% endif %} fw-bold">
+                                {% if entry.quantity > 0 %}+{% endif %}{{ entry.quantity }}
+                            </span>
+                        </td>
+                        <td>{{ entry.entered_by.username|default:"N/A" }}</td>
+                        <td>
+                            {% if entry.notes %}
+                                <span class="text-truncate d-inline-block" style="max-width: 200px;" title="{{ entry.notes }}">
+                                    {{ entry.notes }}
+                                </span>
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+        <nav aria-label="Page navigation" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if entry_type_filter %}&entry_type={{ entry_type_filter }}{% endif %}{% if variant_filter %}&variant={{ variant_filter }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}">
+                        Previous
+                    </a>
+                </li>
+                {% endif %}
+                
+                <li class="page-item active">
+                    <span class="page-link">
+                        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                    </span>
+                </li>
+                
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if entry_type_filter %}&entry_type={{ entry_type_filter }}{% endif %}{% if variant_filter %}&variant={{ variant_filter }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}">
+                        Next
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+        
+        {% else %}
+        <div class="empty-state py-5">
+            <i class="bi bi-inbox d-block"></i>
+            <p class="mb-3">No stock entries found</p>
+            <a href="{% url 'inventory:stock_entry' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Create First Entry
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

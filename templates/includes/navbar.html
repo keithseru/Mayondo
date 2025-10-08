@@ -1,7 +1,7 @@
 {% load static %}
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
     <div class="container-fluid">
-        <a class="navbar-brand" href="{% url 'dashboard_router' %}">
+        <a class="navbar-brand" href="{% url 'users:dashboard' %}">
             <i class="bi bi-tree-fill"></i> MayondoWood
         </a>
         
@@ -51,7 +51,7 @@
                 {% if user.role == 'MANAGER' %}
                 <li class="nav-item">
                     <a class="nav-link {% if 'staff' in request.path %}active{% endif %}" 
-                       href="{% url 'staff_list' %}">
+                       href="{% url 'users:staff_list' %}">
                         <i class="bi bi-person-badge"></i> Staff
                     </a>
                 </li>
@@ -69,13 +69,13 @@
                         <li><h6 class="dropdown-header">{{ user.email }}</h6></li>
                         <li><hr class="dropdown-divider"></li>
                         <li>
-                            <a class="dropdown-item" href="{% url 'profile_view' %}">
+                            <a class="dropdown-item" href="{% url 'users:profile' %}">
                                 <i class="bi bi-person"></i> My Profile
                             </a>
                         </li>
                         <li><hr class="dropdown-divider"></li>
                         <li>
-                            <a class="dropdown-item text-danger" href="{% url 'logout_user' %}">
+                            <a class="dropdown-item text-danger" href="{% url 'users:logout' %}">
                                 <i class="bi bi-box-arrow-right"></i> Logout
                             </a>
                         </li>

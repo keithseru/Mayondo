@@ -49,13 +49,13 @@
                     <strong>{{ staff_user.date_joined|date:"M d, Y" }}</strong>
                 </div>
                 
-                <form method="post">
+                <form method="post" id="delete-form">
                     {% csrf_token %}
                     <div class="d-flex justify-content-between">
-                        <a href="{% url 'staff_list' %}" class="btn btn-outline-secondary">
+                        <a href="{% url 'users:staff_list' %}" class="btn btn-outline-secondary">
                             <i class="bi bi-arrow-left"></i> Cancel
                         </a>
-                        <button type="submit" class="btn btn-danger">
+                        <button type="submit" class="btn btn-danger" data-confirm-delete>
                             <i class="bi bi-trash"></i> Delete Staff Member
                         </button>
                     </div>

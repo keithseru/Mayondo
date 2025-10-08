@@ -17,42 +17,46 @@ def is_staff(user):
 
 # Login view
 def login_user(request):
+    next_url = request.GET.get('next') or request.POST.get('next') or 'users:dashboard'
+
     if request.method == "POST":
         form = StaffAuthenticationForm(request, data=request.POST)
         if form.is_valid():
             user = form.get_user()
             if user.role in ["MANAGER", "SALES", "INVENTORY"]:
                 login(request, user)
-                return redirect('dashboard_router')
+                return redirect(next_url)
             else:
                 messages.error(request, 'You are not authorized to access the system.')
-                return redirect('login_user')
+                return redirect('users:login')
     else:
         form = StaffAuthenticationForm()
 
     context = {
         'form': form,
-        'title': 'Login'
+        'title': 'Login',
+        'next': request.GET.get('next', '')
     }
     return render(request, 'users/login.html', context)
+
 
 # Logout view
 @login_required
 def logout_user(request):
     logout(request)
     messages.info(request, 'You have been logged out.')
-    return redirect('login_user')
+    return redirect('users:login')
 
 # Staff creation (manager only)
 @login_required
-@user_passes_test(is_manager, login_url='login_user')
+@user_passes_test(is_manager, login_url='users:login')
 def create_staff(request):
     if request.method == 'POST':
         form = StaffForm(request.POST)
         if form.is_valid():
             staff = form.save()
             messages.success(request, f'Staff account created successfully. Username: {staff.username}')
-            return redirect('staff_list')
+            return redirect('users:staff_list')
     else:
         form = StaffForm()
 
@@ -63,7 +67,7 @@ def create_staff(request):
     return render(request, 'users/create_staff.html', context)
 
 @login_required
-@user_passes_test(is_manager, login_url='login_user')
+@user_passes_test(is_manager, login_url='users:login')
 def update_staff(request, pk):
     staff_user = get_object_or_404(Employee, pk=pk)
     if request.method == 'POST':
@@ -81,20 +85,20 @@ def update_staff(request, pk):
     })
 
 @login_required
-@user_passes_test(is_manager, login_url='login_user')
+@user_passes_test(is_manager, login_url='users:login')
 def delete_staff(request, pk):
     staff_user = get_object_or_404(Employee, pk=pk)
     if request.method == 'POST':
         staff_user.delete()
         messages.success(request, "Staff user deleted.")
-        return redirect('staff_list')
+        return redirect('users:staff_list')
     return render(request, 'users/delete_staff.html', {
         'staff_user': staff_user,
         'title': f"Delete Staff: {staff_user.username}"
     })
 
 @login_required
-@user_passes_test(is_manager, login_url='login_user')
+@user_passes_test(is_manager, login_url='users:login')
 def staff_list(request):
     role_filter = request.GET.get('role')
     joined_after = request.GET.get('joined_after')
@@ -137,7 +141,7 @@ def staff_list(request):
     return render(request, 'users/staff_list.html', context)
 
 @login_required
-@user_passes_test(is_manager, login_url='login_user')
+@user_passes_test(is_manager, login_url='users:login')
 def staff_detail(request, pk):
     staff_user = get_object_or_404(Employee, pk=pk)
     return render(request, 'users/staff_detail.html', {
@@ -160,11 +164,11 @@ def profile_view(request):
 def dashboard_router(request):
     role = request.user.role
     if role == 'MANAGER':
-        return redirect('manager_dashboard')
+        return redirect('manager:dashboard')
     elif role == 'SALES':
-        return redirect('sales_dashboard')
+        return redirect('sales:dashboard')
     elif role == 'INVENTORY':
-        return redirect('inventory_dashboard')
+        return redirect('inventory:dashboard')
     else:
         messages.error(request, 'Invalid role. Contact admin.')
-        return redirect('login_user')
+        return redirect('users:login')

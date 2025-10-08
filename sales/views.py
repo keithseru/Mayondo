@@ -28,6 +28,8 @@ def is_sales_or_manager(user):
 def sale_list(request):
     status_filter = request.GET.get('status')
     customer_filter = request.GET.get('customer')
+    staff_filter = request.GET.get('staff')
+    product_filter = request.GET.get('product')
     date_from = request.GET.get('date_from')
     date_to = request.GET.get('date_to')
     export = request.GET.get('export')
@@ -39,6 +41,10 @@ def sale_list(request):
         sales = sales.filter(status=status_filter)
     if customer_filter:
         sales = sales.filter(customer__id=customer_filter)
+    if staff_filter:
+        sales = sales.filter(created_by__id=staff_filter)
+    if product_filter:
+        sales = sales.filter(items__product_variant__id=product_filter)
     if date_from:
         sales = sales.filter(sale_date__gte=date_from)
     if date_to:
@@ -46,10 +52,10 @@ def sale_list(request):
         
     # CSV Export
     if export == 'csv':
-        response = HttpResponse(context_type='text/csv')
+        response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename="sales.csv"'
         writer = csv.writer(response)
-        writer.row(['Sale ID', 'Customer', 'Date', 'Status', 'Payment', 'Items', 'Subtotal', 'Delivery Fee', 'Total'])
+        writer.writerow(['Sale ID', 'Customer', 'Date', 'Status', 'Payment', 'Items', 'Subtotal', 'Delivery Fee', 'Total'])
         
         for sale in sales:
             writer.writerow([
@@ -70,11 +76,11 @@ def sale_list(request):
     page_obj = paginator.get_page(page_number)
     
     # Get customers fro filter dropdown
-    customers = Customer.objects.filter('is_active').order_by('last_name', 'first_name')
+    customers = Customer.objects.filter(is_active=True).order_by('last_name', 'first_name')
     
     context = {
         'page_obj': page_obj,
-        'customers':customers,
+        'customers': customers,
         'status_filter': status_filter,
         'customer_filter': customer_filter,
         'date_from': date_from,
@@ -272,15 +278,15 @@ def create_customer(request):
             if request.GET.get('next') == 'sale':
                 return redirect('create_sale')
             return redirect('customer_list')
-        else:
-            form = CustomerForm()
-        context = {
-            'form': form,
-            'title': 'Add Customer'
-        }
-        
-        return render(request, 'sales/create_customer.html', context)
+    else:
+        form = CustomerForm()
+    context = {
+        'form': form,
+        'title': 'Add Customer'
+    }
     
+    return render(request, 'sales/create_customer.html', context)
+
 # Update customer details
 @login_required
 @user_passes_test(is_sales_or_manager, login_url='login_user')

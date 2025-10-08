@@ -6,9 +6,9 @@ from django.core.exceptions import ValidationError
 class Employee(AbstractUser):
     '''Custom user model for employees'''
     ROLES = [
-        ('MANAGER', 'Manager'),
         ('SALES', 'Sales'),
         ('INVENTORY', 'Inventory'),
+        ('MANAGER', 'Manager'),
     ]
 
     role = models.CharField(max_length=20, choices=ROLES)

@@ -176,7 +176,7 @@ def manager_reports(request):
         role__in=['SALES', 'INVENTORY', 'MANAGER'],
         is_active=True
     ).annotate(
-        sales_created=Count('sales_created', filter=Q(
+        sales_created_by=Count('sales_created', filter=Q(
             sales_created__sale_date__date__gte=date_from,
             sales_created__sale_date__date__lte=date_to
         )),
