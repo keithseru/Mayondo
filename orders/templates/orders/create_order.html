@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Create Purchase Order - MayondoWood{% endblock %}
+
+{% block extra_css %}
+<style>
+    .formset-row {
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
+        padding: 15px;
+        margin-bottom: 15px;
+        background-color: #f8f9fa;
+    }
+    .delete-row {
+        color: #dc3545;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header mb-4">
+    <h1><i class="bi bi-bag-plus"></i> Create Purchase Order</h1>
+    <p class="text-muted mb-0">Place a new order with a supplier</p>
+</div>
+
+<form method="post" id="order-form">
+    {% csrf_token %}
+    
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Order Information -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Order Information</h5>
+                </div>
+                <div class="card-body">
+                    {{ form.supplier|as_crispy_field }}
+                    {{ form.expected_delivery|as_crispy_field }}
+                    {{ form.notes|as_crispy_field }}
+                </div>
+            </div>
+            
+            <!-- Order Items -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Order Items</h5>
+                </div>
+                <div class="card-body">
+                    {{ formset.management_form }}
+                    
+                    <div id="formset-container">
+                        {% for form in formset %}
+                        <div class="formset-row">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="mb-0">Item {{ forloop.counter }}</h6>
+                                {% if not forloop.first %}
+                                <span class="delete-row" style="cursor: pointer;">
+                                    <i class="bi bi-x-circle"></i> Remove
+                                </span>
+                                {% endif %}
+                            </div>
+                            {{ form.variant|as_crispy_field }}
+                            <div class="row">
+                                <div class="col-md-4">
+                                    {{ form.quantity|as_crispy_field }}
+                                </div>
+                                <div class="col-md-4">
+                                    {{ form.unit_price|as_crispy_field }}
+                                </div>
+                                <div class="col-md-4">
+                                    {{ form.notes|as_crispy_field }}
+                                </div>
+                            </div>
+                            {{ form.DELETE }}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <button type="button" class="btn btn-outline-primary" id="add-item">
+                        <i class="bi bi-plus-circle"></i> Add Another Item
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h6 class="card-title"><i class="bi bi-info-circle"></i> Instructions</h6>
+                    <ul class="small mb-3">
+                        <li>Select the supplier for this order</li>
+                        <li>Add at least one item to the order</li>
+                        <li>Set expected delivery date (optional)</li>
+                        <li>Unit prices can be edited if different from product price</li>
+                    </ul>
+                    
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-check-circle"></i> Create Order
+                    </button>
+                    <a href="{% url 'orders:order_list' %}" class="btn btn-outline-secondary w-100 mt-2">
+                        <i class="bi bi-x-circle"></i> Cancel
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle delete row
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.delete-row')) {
+            const row = e.target.closest('.formset-row');
+            const deleteInput = row.querySelector('input[name$="-DELETE"]');
+            if (deleteInput) {
+                deleteInput.checked = true;
+                row.style.display = 'none';
+            }
+        }
+    });
+    
+    // Add new item functionality would go here
+    // This is a simplified version - full implementation would clone forms
+});
+</script>
+{% endblock %}

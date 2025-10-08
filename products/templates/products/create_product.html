@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ title|default:"Create Product" }} - MayondoWood{% endblock %}
+
+{% block extra_css %}
+<style>
+    .formset-row {
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
+        padding: 15px;
+        margin-bottom: 15px;
+        background-color: #f8f9fa;
+    }
+    .delete-row {
+        color: #dc3545;
+        cursor: pointer;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header mb-4">
+    <h1><i class="bi bi-box-seam"></i> {{ title|default:"Create Product" }}</h1>
+    <p class="text-muted mb-0">Add a new product with variants</p>
+</div>
+
+<form method="post" id="product-form">
+    {% csrf_token %}
+    
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Product Information -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Product Information</h5>
+                </div>
+                <div class="card-body">
+                    {{ form.name|as_crispy_field }}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            {{ form.category|as_crispy_field }}
+                        </div>
+                        <div class="col-md-6">
+                            {{ form.unit|as_crispy_field }}
+                        </div>
+                    </div>
+                    
+                    {{ form.supplier|as_crispy_field }}
+                    {{ form.description|as_crispy_field }}
+                </div>
+            </div>
+            
+            <!-- Product Variants -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Product Variants</h5>
+                    <small class="text-muted">Add at least one variant</small>
+                </div>
+                <div class="card-body">
+                    {{ formset.management_form }}
+                    
+                    <div id="formset-container">
+                        {% for form in formset %}
+                        <div class="formset-row">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="mb-0">Variant {{ forloop.counter }}</h6>
+                                {% if not forloop.first %}
+                                <span class="delete-row">
+                                    <i class="bi bi-x-circle"></i> Remove
+                                </span>
+                                {% endif %}
+                            </div>
+                            {{ form.variant_name|as_crispy_field }}
+                            <div class="row">
+                                <div class="col-md-6">
+                                    {{ form.price|as_crispy_field }}
+                                </div>
+                                <div class="col-md-6">
+                                    {{ form.reorder_level|as_crispy_field }}
+                                </div>
+                            </div>
+                            {{ form.DELETE }}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card bg-light sticky-top" style="top: 80px;">
+                <div class="card-body">
+                    <h6 class="card-title"><i class="bi bi-info-circle"></i> Instructions</h6>
+                    <ul class="small mb-3">
+                        <li>Enter product name and select category</li>
+                        <li>Choose unit of measurement</li>
+                        <li>Add at least one variant with price</li>
+                        <li>Set reorder level for stock alerts</li>
+                        <li>Initial stock will be 0 (add stock later)</li>
+                    </ul>
+                    
+                    <button type="submit" class="btn btn-primary w-100 mb-2">
+                        <i class="bi bi-check-circle"></i> {{ button_label|default:"Create Product" }}
+                    </button>
+                    <a href="{% url 'products:product_list' %}" class="btn btn-outline-secondary w-100">
+                        <i class="bi bi-x-circle"></i> Cancel
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle delete row
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.delete-row')) {
+            const row = e.target.closest('.formset-row');
+            const deleteInput = row.querySelector('input[name$="-DELETE"]');
+            if (deleteInput) {
+                deleteInput.checked = true;
+                row.style.display = 'none';
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

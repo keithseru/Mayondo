@@ -1,0 +1,180 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Inventory Reports - MayondoWood{% endblock %}
+
+{% block content %}
+<div class="page-header mb-4">
+    <h1><i class="bi bi-clipboard-data"></i> Inventory Reports</h1>
+    <p class="text-muted mb-0">Comprehensive inventory analysis</p>
+</div>
+
+<!-- Summary Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card primary h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="stat-label mb-2">Total Items</p>
+                        <h2 class="stat-value mb-1">{{ total_items }}</h2>
+                        <small class="text-muted">In stock</small>
+                    </div>
+                    <i class="bi bi-boxes stat-icon"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card stat-card success h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="stat-label mb-2">Stock Value</p>
+                        <h2 class="stat-value mb-1">{{ total_stock_value|floatformat:0|slice:":4" }}M</h2>
+                        <small class="text-muted">UGX</small>
+                    </div>
+                    <i class="bi bi-currency-dollar stat-icon"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card stat-card warning h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="stat-label mb-2">Low Stock</p>
+                        <h2 class="stat-value mb-1">{{ low_stock_items.count }}</h2>
+                        <small class="text-warning">Need attention</small>
+                    </div>
+                    <i class="bi bi-exclamation-triangle stat-icon"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card stat-card danger h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="stat-label mb-2">Out of Stock</p>
+                        <h2 class="stat-value mb-1">{{ out_of_stock_items.count }}</h2>
+                        <small class="text-danger">Critical</small>
+                    </div>
+                    <i class="bi bi-x-circle stat-icon"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Low Stock Items -->
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-exclamation-triangle text-warning"></i> Low Stock Items</h5>
+                <small class="text-muted">Below threshold of {{ low_stock_threshold }} units</small>
+            </div>
+            <div class="card-body p-0">
+                {% if low_stock_items %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>Category</th>
+                                <th class="text-end">Stock</th>
+                                <th class="text-end">Reorder Level</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in low_stock_items %}
+                            <tr>
+                                <td>
+                                    <strong>{{ item.product.name }}</strong><br>
+                                    <small class="text-muted">{{ item.variant_name }}</small>
+                                </td>
+                                <td>{{ item.product.category.name }}</td>
+                                <td class="text-end">
+                                    <span class="badge {% if item.stock_quantity == 0 %}bg-danger{% else %}bg-warning text-dark{% endif %}">
+                                        {{ item.stock_quantity }}
+                                    </span>
+                                </td>
+                                <td class="text-end">{{ item.reorder_level }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state py-4">
+                    <i class="bi bi-check-circle text-success d-block"></i>
+                    <p class="mb-0">All stock levels are healthy</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Stock by Category -->
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-pie-chart"></i> Stock by Category</h5>
+            </div>
+            <div class="card-body p-0">
+                {% if category_stock %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Category</th>
+                                <th class="text-end">Variants</th>
+                                <th class="text-end">Total Items</th>
+                                <th class="text-end">Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in category_stock %}
+                            <tr>
+                                <td><strong>{{ item.category.name }}</strong></td>
+                                <td class="text-end">{{ item.variant_count }}</td>
+                                <td class="text-end">{{ item.total_items }}</td>
+                                <td class="text-end">UGX {{ item.total_value|floatformat:0 }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state py-4">
+                    <i class="bi bi-inbox d-block"></i>
+                    <p class="mb-0">No category data available</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Pending Deliveries -->
+{% if pending_orders > 0 %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-truck"></i> Pending Deliveries</h5>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-info mb-0">
+            <i class="bi bi-info-circle me-2"></i>
+            You have <strong>{{ pending_orders }}</strong> pending order{{ pending_orders|pluralize }} awaiting delivery.
+            <a href="{% url 'orders:order_list' %}?status=PENDING" class="alert-link">View pending orders</a>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

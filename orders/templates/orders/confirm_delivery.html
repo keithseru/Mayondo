@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Confirm Delivery - Order #{{ order.id }} - MayondoWood{% endblock %}
+
+{% block content %}
+<div class="page-header mb-4">
+    <h1><i class="bi bi-truck"></i> Confirm Delivery</h1>
+    <p class="text-muted mb-0">Record delivery and update stock levels</p>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card border-success">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">Order #{{ order.id }} - {{ order.supplier.name }}</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle-fill me-2"></i>
+                    <strong>Note:</strong> Enter the quantity received for each item. Stock will be updated accordingly.
+                </div>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    {{ formset.management_form }}
+                    
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th class="text-end">Ordered</th>
+                                    <th class="text-end">Already Delivered</th>
+                                    <th class="text-end">Remaining</th>
+                                    <th class="text-end">Deliver Now</th>
+                                    <th>Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for form in formset %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ form.instance.variant.product.name }}</strong>
+                                        <br><small class="text-muted">{{ form.instance.variant.variant_name }}</small>
+                                    </td>
+                                    <td class="text-end">{{ form.instance.quantity }}</td>
+                                    <td class="text-end">{{ form.instance.delivered_quantity }}</td>
+                                    <td class="text-end">
+                                        <strong>{{ form.instance.remaining_quantity }}</strong>
+                                    </td>
+                                    <td>
+                                        {{ form.delivered_quantity }}
+                                        {{ form.id }}
+                                    </td>
+                                    <td>
+                                        {{ form.notes }}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{% url 'orders:order_detail' order.pk %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-check-circle"></i> Confirm Delivery
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card bg-light">
+            <div class="card-body">
+                <h6 class="card-title"><i class="bi bi-info-circle"></i> Instructions</h6>
+                <ul class="small mb-0">
+                    <li>Enter quantity received for each item</li>
+                    <li>Cannot exceed remaining quantity</li>
+                    <li>Stock will be updated automatically</li>
+                    <li>Order status will update based on delivery</li>
+                    <li>Leave quantity as 0 for items not delivered</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">Order Summary</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-2">
+                    <small class="text-muted d-block">Supplier</small>
+                    <strong>{{ order.supplier.name }}</strong>
+                </div>
+                <div class="mb-2">
+                    <small class="text-muted d-block">Order Date</small>
+                    <strong>{{ order.order_date|date:"M d, Y" }}</strong>
+                </div>
+                <div class="mb-0">
+                    <small class="text-muted d-block">Total Amount</small>
+                    <strong>UGX {{ order.total_amount|floatformat:0 }}</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

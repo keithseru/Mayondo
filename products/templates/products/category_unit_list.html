@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Categories & Units - MayondoWood{% endblock %}
+
+{% block content %}
+<div class="page-header mb-4">
+    <h1><i class="bi bi-gear"></i> Categories & Units</h1>
+    <p class="text-muted mb-0">Manage product categories and units of measurement</p>
+</div>
+
+<div class="row">
+    <!-- Categories -->
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-folder"></i> Categories</h5>
+                <a href="{% url 'products:create_category' %}" class="btn btn-sm btn-primary">
+                    <i class="bi bi-plus-circle"></i> New Category
+                </a>
+            </div>
+            <div class="card-body p-0">
+                {% if categories %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Type</th>
+                                <th>Description</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for category in categories %}
+                            <tr>
+                                <td><strong>{{ category.name }}</strong></td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ category.get_type_display }}</span>
+                                </td>
+                                <td>
+                                    {% if category.description %}
+                                        <small class="text-muted">{{ category.description|truncatewords:8 }}</small>
+                                    {% else %}
+                                        <span class="text-muted">—</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    <a href="{% url 'products:update_category' category.pk %}" 
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <a href="{% url 'products:delete_category' category.pk %}" 
+                                       class="btn btn-sm btn-outline-danger">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state py-4">
+                    <i class="bi bi-inbox d-block"></i>
+                    <p class="mb-3">No categories found</p>
+                    <a href="{% url 'products:create_category' %}" class="btn btn-primary btn-sm">
+                        <i class="bi bi-plus-circle"></i> Add First Category
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Units -->
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-rulers"></i> Units</h5>
+                <a href="{% url 'products:create_unit' %}" class="btn btn-sm btn-primary">
+                    <i class="bi bi-plus-circle"></i> New Unit
+                </a>
+            </div>
+            <div class="card-body p-0">
+                {% if units %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Abbreviation</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for unit in units %}
+                            <tr>
+                                <td><strong>{{ unit.name }}</strong></td>
+                                <td>
+                                    {% if unit.abbreviation %}
+                                        <span class="badge bg-info">{{ unit.abbreviation }}</span>
+                                    {% else %}
+                                        <span class="text-muted">—</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    <a href="{% url 'products:update_unit' unit.pk %}" 
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <a href="{% url 'products:delete_unit' unit.pk %}" 
+                                       class="btn btn-sm btn-outline-danger">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state py-4">
+                    <i class="bi bi-inbox d-block"></i>
+                    <p class="mb-3">No units found</p>
+                    <a href="{% url 'products:create_unit' %}" class="btn btn-primary btn-sm">
+                        <i class="bi bi-plus-circle"></i> Add First Unit
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-3">
+    <a href="{% url 'products:product_list' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Back to Products
+    </a>
+</div>
+{% endblock %}

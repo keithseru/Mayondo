@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Order #{{ order.id }} - MayondoWood{% endblock %}
+
+{% block content %}
+<div class="page-header mb-4">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1><i class="bi bi-receipt"></i> Order #{{ order.id }}</h1>
+            <p class="text-muted mb-0">{{ order.supplier.name }}</p>
+        </div>
+        <div>
+            <span class="badge badge-{{ order.status|lower }} fs-5">
+                {{ order.get_status_display }}
+            </span>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <!-- Order Items -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Order Items</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>Variant</th>
+                                <th class="text-end">Quantity</th>
+                                <th class="text-end">Delivered</th>
+                                <th class="text-end">Unit Price</th>
+                                <th class="text-end">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in order.items.all %}
+                            <tr>
+                                <td><strong>{{ item.variant.product.name }}</strong></td>
+                                <td>{{ item.variant.variant_name }}</td>
+                                <td class="text-end">{{ item.quantity }}</td>
+                                <td class="text-end">
+                                    <span class="badge {% if item.is_delivered %}bg-success{% else %}bg-warning text-dark{% endif %}">
+                                        {{ item.delivered_quantity }}
+                                    </span>
+                                </td>
+                                <td class="text-end">UGX {{ item.unit_price|floatformat:0 }}</td>
+                                <td class="text-end"><strong>UGX {{ item.subtotal|floatformat:0 }}</strong></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr class="table-light">
+                                <td colspan="5" class="text-end"><strong>Total Amount:</strong></td>
+                                <td class="text-end">
+                                    <strong class="fs-5 text-success">UGX {{ order.total_amount|floatformat:0 }}</strong>
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Notes -->
+        {% if order.notes %}
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-chat-left-text"></i> Notes</h6>
+            </div>
+            <div class="card-body">
+                <p class="mb-0">{{ order.notes }}</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="col-lg-4">
+        <!-- Order Details -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h6 class="mb-0">Order Information</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <small class="text-muted d-block">Supplier</small>
+                    <strong>{{ order.supplier.name }}</strong>
+                </div>
+                
+                <div class="mb-3">
+                    <small class="text-muted d-block">Order Date</small>
+                    <strong>{{ order.order_date|date:"M d, Y H:i" }}</strong>
+                </div>
+                
+                {% if order.expected_delivery %}
+                <div class="mb-3">
+                    <small class="text-muted d-block">Expected Delivery</small>
+                    <strong>{{ order.expected_delivery|date:"M d, Y" }}</strong>
+                </div>
+                {% endif %}
+                
+                <div class="mb-3">
+                    <small class="text-muted d-block">Created By</small>
+                    <strong>{{ order.created_by.get_full_name|default:order.created_by.username }}</strong>
+                </div>
+                
+                {% if order.received_by %}
+                <div class="mb-3">
+                    <small class="text-muted d-block">Received By</small>
+                    <strong>{{ order.received_by.get_full_name|default:order.received_by.username }}</strong>
+                </div>
+                {% endif %}
+                
+                {% if order.received_date %}
+                <div class="mb-3">
+                    <small class="text-muted d-block">Received Date</small>
+                    <strong>{{ order.received_date|date:"M d, Y H:i" }}</strong>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Actions -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">Actions</h6>
+            </div>
+            <div class="card-body">
+                {% if order.status == 'PENDING' or order.status == 'PARTIAL' %}
+                <a href="{% url 'orders:confirm_delivery' order.pk %}" class="btn btn-success w-100 mb-2">
+                    <i class="bi bi-check-circle"></i> Confirm Delivery
+                </a>
+                {% endif %}
+                
+                {% if user.role == 'MANAGER' and order.status != 'DELIVERED' %}
+                <a href="{% url 'orders:delete_order' order.pk %}" class="btn btn-outline-danger w-100">
+                    <i class="bi bi-trash"></i> Delete Order
+                </a>
+                {% endif %}
+                
+                <a href="{% url 'orders:order_list' %}" class="btn btn-outline-secondary w-100 mt-2">
+                    <i class="bi bi-arrow-left"></i> Back to Orders
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

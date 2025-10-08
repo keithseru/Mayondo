@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Suppliers - MayondoWood{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1><i class="bi bi-shop"></i> Suppliers</h1>
+            <p class="text-muted mb-0">Manage supplier information</p>
+        </div>
+        <div>
+            <a href="{% url 'orders:create_supplier' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> New Supplier
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Search -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-10">
+                <input type="text" name="search" class="form-control" 
+                       placeholder="Search by name, contact person, email, or phone..." value="{{ search }}">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-search"></i> Search
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Suppliers Table -->
+<div class="card">
+    <div class="card-body">
+        {% if suppliers %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Supplier Name</th>
+                        <th>Contact Person</th>
+                        <th>Contact Details</th>
+                        <th>Address</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for supplier in suppliers %}
+                    <tr>
+                        <td><strong>{{ supplier.name }}</strong></td>
+                        <td>{{ supplier.contact_person }}</td>
+                        <td>
+                            {% if supplier.phone %}
+                                <i class="bi bi-telephone"></i> {{ supplier.phone }}<br>
+                            {% endif %}
+                            {% if supplier.email %}
+                                <small class="text-muted">
+                                    <i class="bi bi-envelope"></i> {{ supplier.email }}
+                                </small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if supplier.address %}
+                                <small class="text-muted">{{ supplier.address|truncatewords:8 }}</small>
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <a href="{% url 'orders:update_supplier' supplier.pk %}" 
+                               class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            {% if user.role == 'MANAGER' %}
+                            <a href="{% url 'orders:delete_supplier' supplier.pk %}" 
+                               class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-trash"></i>
+                            </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state py-5">
+            <i class="bi bi-inbox d-block"></i>
+            <p class="mb-3">No suppliers found</p>
+            <a href="{% url 'orders:create_supplier' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Add First Supplier
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

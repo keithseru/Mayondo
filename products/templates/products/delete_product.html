@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Delete Product - MayondoWood{% endblock %}
+
+{% block content %}
+<div class="page-header mb-4">
+    <h1><i class="bi bi-trash"></i> Delete Product</h1>
+    <p class="text-muted mb-0">Permanently remove this product</p>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0">Confirm Product Deletion</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    <strong>Warning:</strong> This action cannot be undone. Deleting this product will also delete all its variants.
+                </div>
+                
+                <h6 class="mb-3">Product Information:</h6>
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <small class="text-muted d-block">Product Name</small>
+                        <strong>{{ product.name }}</strong>
+                    </div>
+                    <div class="col-6">
+                        <small class="text-muted d-block">Category</small>
+                        <strong>{{ product.category.name }}</strong>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <small class="text-muted d-block">Unit</small>
+                        <strong>{{ product.unit.name }}</strong>
+                    </div>
+                    <div class="col-6">
+                        <small class="text-muted d-block">Variants</small>
+                        <strong>{{ product.variants.count }}</strong>
+                    </div>
+                </div>
+                
+                {% if product.description %}
+                <div class="mb-3">
+                    <small class="text-muted d-block">Description</small>
+                    <p class="mb-0">{{ product.description }}</p>
+                </div>
+                {% endif %}
+                
+                {% if product.variants.all %}
+                <div class="mb-3">
+                    <small class="text-muted d-block">Variants to be deleted:</small>
+                    <ul class="small mb-0">
+                        {% for variant in product.variants.all %}
+                        <li>{{ variant.variant_name }} - Stock: {{ variant.stock_quantity }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+                
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'products:product_detail' product.pk %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-trash"></i> Delete Product
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
