@@ -41,7 +41,7 @@
                         <h2 class="stat-value mb-1">{{ total_revenue|floatformat:0|slice:":4" }}M</h2>
                         <small class="text-muted">{{ total_sales }} sales</small>
                     </div>
-                    <i class="bi bi-currency-dollar stat-icon"></i>
+                    <i class="bi bi-cash stat-icon"></i>
                 </div>
             </div>
         </div>
@@ -119,8 +119,8 @@
                                 <td>
                                     <span class="badge bg-secondary">{{ staff.get_role_display }}</span>
                                 </td>
-                                <td class="text-end">{{ staff.sales_created }}</td>
-                                <td class="text-end">{{ staff.orders_created }}</td>
+                                <td class="text-end">{{ staff.sales_created_by}}</td>
+                                <td class="text-end">{{ staff.orders_created}}</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -162,7 +162,7 @@
                 <hr>
                 <div class="row text-center">
                     <div class="col-6">
-                        <p class="mb-1 text-muted">Total Variants</p>
+                        <p class="mb-1 text-muted">Total Products</p>
                         <h4>{{ total_variants }}</h4>
                     </div>
                     <div class="col-6">

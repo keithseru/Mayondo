@@ -184,7 +184,7 @@ def manager_reports(request):
             created_orders__order_date__date__gte=date_from,
             created_orders__order_date__date__lte=date_to
         ))
-    ).order_by('-sales_created')
+    ).order_by('-sales_created_by')
     
     # Customer Report
     total_customers = Customer.objects.filter(is_active=True).count()
