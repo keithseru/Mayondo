@@ -80,28 +80,48 @@ class SaleItemForm(forms.ModelForm):
             stock_quantity__gt=0
         ).select_related('product', 'product__category')
         
+        # Make product_variant not required for empty forms
+        self.fields['product_variant'].required = False
+        self.fields['quantity'].required = False
+        self.fields['unit_price'].required = False
+        
         # Custom label showing product name, variant, price and stock
         self.fields['product_variant'].label_from_instance = lambda obj: (
             f'{obj.product.name} - {obj.variant_name} '
             f'(UGX {obj.price:,}, Stock: {obj.stock_quantity})'
         )
         
-        # Set initial unit price from variant price
-        if self.instance and self.instance.product_variant:
-            self.fields['unit_price'].initial = self.instance.product_variant.price
+        # Set initial unit price from variant price ONLY if instance exists and has a product_variant
+        if self.instance and self.instance.pk and hasattr(self.instance, 'product_variant'):
+            try:
+                self.fields['unit_price'].initial = self.instance.product_variant.price
+            except:
+                pass
     
     def clean(self):
         cleaned_data = super().clean()
         product_variant = cleaned_data.get('product_variant')
         quantity = cleaned_data.get('quantity')
         
-        if product_variant and quantity:
-            if quantity > product_variant.stock_quantity:
-                raise forms.ValidationError(
-                    f'Only {product_variant.stock_quantity} units available for {product_variant}'
-                )
+        # If this is an empty form (no product_variant selected), skip validation
+        if not product_variant:
+            return cleaned_data
+        
+        # If product_variant is selected, quantity is required
+        if not quantity:
+            raise forms.ValidationError('Quantity is required when a product is selected.')
+        
+        # Validate stock
+        if quantity > product_variant.stock_quantity:
+            raise forms.ValidationError(
+                f'Only {product_variant.stock_quantity} units available for {product_variant}'
+            )
         
         return cleaned_data
+    
+    def has_changed(self):
+        """Return True only if this form actually has data"""
+        return bool(self.cleaned_data.get('product_variant'))
 
 # Formset for sale items
 SaleItemFormSet = inlineformset_factory(
@@ -111,6 +131,6 @@ SaleItemFormSet = inlineformset_factory(
     fields=['product_variant', 'quantity', 'unit_price', 'discount_percentage'],
     extra=3,
     can_delete=True,
-    min_num=1,
-    validate_min=True,
+    min_num=0,  # Changed from 1 to 0
+    validate_min=False,  # Changed from True to False
 )

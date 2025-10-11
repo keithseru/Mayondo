@@ -97,6 +97,7 @@ def create_sale(request):
     if request.method == 'POST':
         form = SaleForm(request.POST)
         formset = SaleItemFormSet(request.POST)
+        
         if form.is_valid() and formset.is_valid():
             try:
                 with transaction.atomic():
@@ -106,20 +107,33 @@ def create_sale(request):
                     sale.status = 'PENDING'
                     sale.save()
                     
-                    # Save items and validate stock
+                    # Save formset with the sale instance
+                    formset.instance = sale
                     items = formset.save(commit=False)
-                    for item in items:
-                        item.sale = sale
+                    
+                    # Filter out empty forms (forms without product_variant)
+                    valid_items = [item for item in items if hasattr(item, 'product_variant_id') and item.product_variant_id]
+                    
+                    # Check if at least one item exists
+                    if not valid_items:
+                        raise ValidationError('At least one sale item is required.')
+                    
+                    # Process each valid item
+                    for item in valid_items:
                         # Validate stock
                         if item.quantity > item.product_variant.stock_quantity:
                             raise ValidationError(
-                                f'Insufficient stock for {item.product_variant}.'
+                                f'Insufficient stock for {item.product_variant}. '
                                 f'Available: {item.product_variant.stock_quantity}, '
                                 f'Requested: {item.quantity}'
                             )
                         item.save()
                     
-                    #update deliver fee if needed
+                    # Delete any items marked for deletion
+                    for item in formset.deleted_objects:
+                        item.delete()
+                    
+                    # Update delivery fee if needed
                     if sale.delivery_required:
                         sale.update_delivery_fee()
                         
@@ -130,14 +144,19 @@ def create_sale(request):
             except ValidationError as e:
                 messages.error(request, str(e))
         else:
+            # Show specific formset errors for debugging
+            if formset.errors:
+                for i, form_errors in enumerate(formset.errors):
+                    if form_errors:
+                        messages.error(request, f'Item {i+1}: {form_errors}')
             messages.error(request, 'Please correct the errors below')
     else:
         form = SaleForm()
         formset = SaleItemFormSet()
     
     context = {
-        'form':form,
-        'formset':formset,
+        'form': form,
+        'formset': formset,
         'title': 'Record New Sale',
     }
     

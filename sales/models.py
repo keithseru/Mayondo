@@ -262,14 +262,26 @@ class SaleItem(models.Model):
         
         if self.discount_percentage and self.discount_percentage >= 100:
             raise ValidationError({'discount_percentage': 'Discount cannot be 100% or more'})
-        
-        # Validate stock availability only for new items in pending/completed sales
-        if not self.pk and self.sale.status != 'CANCELLED':
-            if self.quantity > self.product_variant.stock_quantity:
-                raise ValidationError(
-                    f'Insufficient stock for {self.product_variant}. '
-                    f'Available: {self.product_variant.stock_quantity}'
-                )
+    
+
+def save(self, *args, **kwargs):
+    """Set unit price from variant if not provided"""
+    # Only set unit_price if not provided AND product_variant is available
+    if not self.unit_price:
+        try:
+            if self.product_variant:
+                self.unit_price = self.product_variant.price
+        except:
+            pass  # If product_variant not available, skip
+    
+    super().save(*args, **kwargs)
+    
+    # Update delivery fee in the parent sale after saving item
+    try:
+        if self.sale and self.sale.delivery_required:
+            self.sale.update_delivery_fee()
+    except:
+        pass  # If sale not available yet, skip
     
     @property
     def subtotal(self):
@@ -293,11 +305,11 @@ class SaleItem(models.Model):
     
     def save(self, *args, **kwargs):
         """Set unit price from variant if not provided"""
-        if not self.unit_price:
+        if not self.unit_price and self.product_variant:
             self.unit_price = self.product_variant.price
         
         super().save(*args, **kwargs)
         
         # Update delivery fee in the parent sale after saving item
-        if self.sale.delivery_required:
+        if hasattr(self, 'sale') and self.sale and self.sale.delivery_required:
             self.sale.update_delivery_fee()
