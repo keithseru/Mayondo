@@ -20,12 +20,15 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Format currency inputs
-    const currencyInputs = document.querySelectorAll('input[type="number"][name*="price"], input[type="number"][name*="amount"]');
-    currencyInputs.forEach(input => {
-        input.addEventListener('blur', function() {
-            if (this.value) {
-                this.value = Math.round(this.value);
+    // Initialize currency formatting
+    initializeCurrencyFormatting();
+
+    // Only prevent negative values on input
+    const numberInputs = document.querySelectorAll('input[type="number"]');
+    numberInputs.forEach(input => {
+        input.addEventListener('input', function() {
+            if (parseFloat(this.value) < 0) {
+                this.value = '';
             }
         });
     });
@@ -84,6 +87,110 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
+// Currency formatting that switches input type
+function initializeCurrencyFormatting() {
+    const currencyInputs = document.querySelectorAll(
+        'input[type="number"][name*="price"], input[type="number"][name*="amount"]'
+    );
+    
+    currencyInputs.forEach(input => {
+        // Skip if already initialized
+        if (input.dataset.currencyInitialized) return;
+        input.dataset.currencyInitialized = 'true';
+        
+        // Store original attributes
+        input.dataset.originalType = 'number';
+        input.dataset.originalMin = input.min || '0';
+        input.dataset.originalStep = input.step || '1';
+        
+        // Format with commas
+        function formatNumber(num) {
+            if (!num || num === '') return '';
+            return parseFloat(num).toLocaleString('en-US');
+        }
+        
+        // Remove commas
+        function unformatNumber(str) {
+            if (!str) return '';
+            return str.replace(/,/g, '');
+        }
+        
+        // When field gets focus, switch to number type
+        input.addEventListener('focus', function() {
+            // Switch to number type for editing
+            this.type = 'number';
+            this.min = this.dataset.originalMin;
+            this.step = this.dataset.originalStep;
+            
+            // Remove commas
+            this.value = unformatNumber(this.value);
+        });
+        
+        // When field loses focus, switch to text type and format
+        input.addEventListener('blur', function() {
+            const rawValue = unformatNumber(this.value);
+            
+            if (rawValue && rawValue !== '') {
+                const numValue = parseFloat(rawValue);
+                
+                if (!isNaN(numValue) && numValue > 0) {
+                    const rounded = Math.round(numValue);
+                    
+                    // Switch to text type to display commas
+                    this.type = 'text';
+                    this.value = formatNumber(rounded);
+                    
+                    // Store the numeric value for form submission
+                    this.dataset.numericValue = rounded;
+                } else {
+                    // Invalid value
+                    this.value = '';
+                    delete this.dataset.numericValue;
+                }
+            } else {
+                // Empty value
+                this.type = 'text';
+                this.value = '';
+                delete this.dataset.numericValue;
+            }
+        });
+        
+        // Format initial value
+        if (input.value && input.value !== '') {
+            const numValue = parseFloat(input.value);
+            if (!isNaN(numValue)) {
+                input.type = 'text';
+                input.value = formatNumber(numValue);
+                input.dataset.numericValue = numValue;
+            }
+        }
+        
+        // Before form submission, restore numeric values
+        const form = input.closest('form');
+        if (form && !form.dataset.currencySubmitHandler) {
+            form.dataset.currencySubmitHandler = 'true';
+            
+            form.addEventListener('submit', function(e) {
+                // Find all price/amount inputs and restore numeric values
+                const priceInputs = this.querySelectorAll('input[name*="price"], input[name*="amount"]');
+                
+                priceInputs.forEach(priceInput => {
+                    // If it has a stored numeric value, use it
+                    if (priceInput.dataset.numericValue) {
+                        priceInput.value = priceInput.dataset.numericValue;
+                    } else {
+                        // Otherwise, clean any commas
+                        priceInput.value = unformatNumber(priceInput.value);
+                    }
+                    
+                    // Make sure it's a number type for submission
+                    priceInput.type = 'number';
+                });
+            });
+        }
+    });
+}
+
 // Formset management functions
 function initializeFormsets() {
     const addButtons = document.querySelectorAll('.add-form-row');
@@ -118,8 +225,9 @@ function addFormRow(e) {
         // Update total forms count
         totalForms.value = newFormIndex + 1;
         
-        // Reinitialize event listeners
+        // Reinitialize event listeners and currency formatting
         initializeFormsets();
+        initializeCurrencyFormatting();
     }
 }
 

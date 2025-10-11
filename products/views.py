@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.http import HttpResponse
 from django.core.paginator import Paginator
 from django.db.models import Q, Sum
+from django.db import transaction
 import csv
 from .models import Product, Category, Unit, ProductVariant
 from .forms import ProductForm, ProductVariantFormSet, UnitForm, CategoryForm
@@ -115,20 +116,38 @@ def create_product(request):
         formset = ProductVariantFormSet(request.POST)
         
         if form.is_valid() and formset.is_valid():
-            product = form.save()
-            
-            variants = formset.save(commit=False)
-            for variant in variants:
-                variant.product = product
-                variant.is_active = True
-                variant.stock_quantity = 0
-                variant.save()
-            
-            messages.success(
-                request, 
-                f'Product "{product.name}" created with {len(variants)} variant(s).'
-            )
-            return redirect('products:product_list')
+            # Use transaction to ensure all or nothing
+            with transaction.atomic():
+                product = form.save()
+                
+                variants = formset.save(commit=False)
+                for variant in variants:
+                    variant.product = product
+                    variant.is_active = True
+                    # Don't save yet - we need to handle stock properly
+                    
+                    # Save variant first with stock_quantity = 0
+                    initial_stock = variant.stock_quantity
+                    variant.stock_quantity = 0
+                    variant.save()
+                    
+                    # Create inventory entry if initial stock > 0
+                    # This will automatically update the variant's stock_quantity
+                    if initial_stock > 0:
+                        from inventory.models import StockEntry
+                        StockEntry.objects.create(
+                            variant=variant,
+                            quantity=initial_stock,
+                            entry_type='ADDITION',
+                            entered_by=request.user,
+                            notes=f'Initial stock for {product.name} - {variant.variant_name}'
+                        )
+                
+                messages.success(
+                    request, 
+                    f'Product "{product.name}" created with {len(variants)} variant(s) and initial stock recorded.'
+                )
+                return redirect('products:product_list')
         else:
             messages.error(request, 'Please correct the errors below.')
     else:
@@ -151,8 +170,59 @@ def update_product(request, pk):
         formset = ProductVariantFormSet(request.POST, instance=product)
         
         if form.is_valid() and formset.is_valid():
-            form.save()
-            formset.save()
+            with transaction.atomic():
+                form.save()
+                
+                # Get existing variants before saving formset
+                existing_variants = {v.id: v.stock_quantity for v in product.variants.all()}
+                
+                variants = formset.save(commit=False)
+                
+                # Handle new and updated variants
+                for variant in variants:
+                    old_stock = existing_variants.get(variant.id, 0) if variant.id else 0
+                    form_stock = variant.stock_quantity
+                    
+                    # If it's an existing variant
+                    if variant.id:
+                        # Calculate the difference
+                        difference = form_stock - old_stock
+                        
+                        # Save the variant first without changing stock
+                        variant.stock_quantity = old_stock
+                        variant.save()
+                        
+                        # If stock changed, create adjustment entry
+                        if difference != 0:
+                            from inventory.models import StockEntry
+                            StockEntry.objects.create(
+                                variant=variant,
+                                quantity=difference,
+                                entry_type='ADJUSTMENT',
+                                entered_by=request.user,
+                                notes=f'Stock adjustment for {product.name} - {variant.variant_name}'
+                            )
+                    else:
+                        # New variant - save with stock = 0 first
+                        initial_stock = variant.stock_quantity
+                        variant.stock_quantity = 0
+                        variant.save()
+                        
+                        # Then create entry if there's initial stock
+                        if initial_stock > 0:
+                            from inventory.models import StockEntry
+                            StockEntry.objects.create(
+                                variant=variant,
+                                quantity=initial_stock,
+                                entry_type='ADDITION',
+                                entered_by=request.user,
+                                notes=f'Initial stock for new variant {product.name} - {variant.variant_name}'
+                            )
+                
+                # Handle deleted variants
+                for variant in formset.deleted_objects:
+                    variant.delete()
+                    
             messages.success(request, f'Product "{product.name}" updated successfully.')
             return redirect('products:product_detail', pk=pk)
         else:
@@ -165,7 +235,8 @@ def update_product(request, pk):
         'form': form,
         'formset': formset,
         'product': product,
-        'title': f'Update {product.name}'
+        'title': f'Update {product.name}',
+        'button_label': 'Update Product'
     }
     return render(request, 'products/create_product.html', context)
 

@@ -128,9 +128,8 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
 # Static files (CSS, JavaScript, Images)
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
-STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
@@ -138,7 +137,7 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 #Crispy Forms
-CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
+CRISPY_ALLOWED_TEMPLATE_PACKS = ["bootstrap5"]
 CRISPY_TEMPLATE_PACK = "bootstrap5"
 
 # Custom User Model

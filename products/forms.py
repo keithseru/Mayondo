@@ -79,21 +79,43 @@ class ProductForm(forms.ModelForm):
 class ProductVariantForm(forms.ModelForm):
     class Meta:
         model = ProductVariant
-        fields = ["variant_name", "price", "reorder_level"]
+        fields = ["variant_name", "price", "stock_quantity", "reorder_level"]
         widgets = {
-            'price': forms.NumberInput(attrs={'min': 1}),
-            'reorder_level': forms.NumberInput(attrs={'min': 0, 'value': 10}),
+            'price': forms.NumberInput(attrs={
+                'min': '1',
+                'step': '1',
+                'class': 'form-control price-input'
+            }),
+            'stock_quantity': forms.NumberInput(attrs={
+                'min': '0',
+                'step': '1',
+                'value': '0',
+                'class': 'form-control'
+            }),
+            'reorder_level': forms.NumberInput(attrs={
+                'min': '0', 
+                'value': '10',
+                'step': '1',
+                'class': 'form-control'
+            }),
         }
         help_texts = {
             'price': 'Price in UGX (Ugandan Shillings)',
+            'stock_quantity': 'Initial stock quantity in warehouse',
             'reorder_level': 'Alert when stock falls to this level',
         }
     
     def clean_price(self):
         price = self.cleaned_data.get('price')
-        if price and price <= 0:
+        if price is not None and price <= 0:
             raise forms.ValidationError('Price must be greater than zero')
         return price
+    
+    def clean_stock_quantity(self):
+        stock = self.cleaned_data.get('stock_quantity')
+        if stock is not None and stock < 0:
+            raise forms.ValidationError('Stock quantity cannot be negative')
+        return stock
 
 
 # Formset for product variants
@@ -101,8 +123,8 @@ ProductVariantFormSet = inlineformset_factory(
     Product,
     ProductVariant,
     form=ProductVariantForm,
-    fields=["variant_name", "price", "reorder_level"],
-    extra=2,
+    fields=["variant_name", "price", "stock_quantity", "reorder_level"],
+    extra=1,  # Start with 1 empty form
     can_delete=True,
     min_num=1,
     validate_min=True,

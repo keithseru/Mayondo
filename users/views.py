@@ -137,7 +137,6 @@ def staff_list(request):
         'role_filter': role_filter,
         'joined_after': joined_after
     }
-    
     return render(request, 'users/staff_list.html', context)
 
 @login_required
@@ -147,9 +146,7 @@ def staff_detail(request, pk):
     return render(request, 'users/staff_detail.html', {
         'staff_user': staff_user,
         'title': f"Staff Details: {staff_user.get_full_name() or staff_user.username}"
-
     })
-
 
 # Profile view
 @login_required
@@ -172,3 +169,4 @@ def dashboard_router(request):
     else:
         messages.error(request, 'Invalid role. Contact admin.')
         return redirect('users:login')
+    

@@ -126,7 +126,7 @@ def create_sale(request):
                     messages.success(
                         request, f"Sale #{sale.id} created successfully. Total: UGX {sale.total:,}"
                     )
-                    return redirect('sales_detail', pk=sale.pk)
+                    return redirect('sales:sale_detail', pk=sale.pk)
             except ValidationError as e:
                 messages.error(request, str(e))
         else:
@@ -161,7 +161,7 @@ def complete_sale(request, pk):
     
     if sale.status == 'COMPLETED':
         messages.warning(request, 'This sale is already completed')
-        return redirect('sale_detail', pk=pk)
+        return redirect('sales:sale_detail', pk=pk)
     
     if request.method == 'POST':
         try:
@@ -172,7 +172,7 @@ def complete_sale(request, pk):
             )
         except ValidationError as e:
             messages.error(request, str(e))
-        return redirect('sale_detail', pk=pk)
+        return redirect('sales:sale_detail', pk=pk)
     
     context = {
         'sale': sale,
@@ -190,7 +190,7 @@ def cancel_sale(request, pk):
     
     if sale.status == 'CANCELLED':
         messages.warning(request, 'This sale is already cancelled.')
-        return redirect('sale_detail', pk=pk)
+        return redirect('sales:sale_detail', pk=pk)
     
     if request.method == "POST":
         try:
@@ -201,7 +201,7 @@ def cancel_sale(request, pk):
             )
         except ValidationError as e:
             messages.error(request, str(e))
-        return redirect('sale_detail', pk=pk)
+        return redirect('sales:sale_detail', pk=pk)
     context = {
         'sale': sale,
         'title': f'Cancel Sale #{sale.id}'
@@ -217,13 +217,13 @@ def delete_sale(request, pk):
     
     if sale.status == 'COMPLETED':
         messages.error(request, 'Cannot delete completed sales. Cancel first, then delete.')
-        return redirect('sale_detail', pk=pk)
+        return redirect('sales:sale_detail', pk=pk)
     
     if request.method == 'POST':
         sale_id = sale.id
         sale.delete()
         messages.success(request, f"Sale #{sale_id} deleted successfully.")
-        return redirect('sale_list')
+        return redirect('sales:sale_list')
     
     context = {
         'sale': sale,
@@ -276,8 +276,8 @@ def create_customer(request):
             
             # Check if this was called from sale creation
             if request.GET.get('next') == 'sale':
-                return redirect('create_sale')
-            return redirect('customer_list')
+                return redirect('sales:create_sale')
+            return redirect('sales:customer_list')
     else:
         form = CustomerForm()
     context = {
@@ -298,7 +298,7 @@ def update_customer(request, pk):
         if form.is_valid():
             form.save()
             messages.success(request, f"Customer {customer.full_name} updated successfully.")
-            return redirect('customer_list')
+            return redirect('sales:customer_list')
     else:
         form = CustomerForm(instance=customer)
         
@@ -324,19 +324,19 @@ def delete_customer(request, pk):
             request,
             f'Cannot delete {customer.full_name}. They have {sales_count} associated sales.'
         )
-        return redirect('customer_list')
+        return redirect('sales:customer_list')
     
     if request.method == 'POST':
         customer_name = customer.full_name
         customer.delete()
         messages.success(request, f"Customer {customer_name} deleted successfully.")
-        return redirect('customer_list')
+        return redirect('sales:customer_list')
     
     context = {
         'customer': customer,
         'title': f'Delete {customer.full_name}'
     }
-    return redirect(request, 'sales/delete_customer.html', context)
+    return render(request, 'sales/delete_customer.html', context)
 
 # Sales Dashboard
 @login_required

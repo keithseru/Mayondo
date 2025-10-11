@@ -16,6 +16,14 @@
         color: #dc3545;
         cursor: pointer;
     }
+    .formset-row.to-delete {
+        opacity: 0.5;
+        background-color: #f8d7da;
+    }
+    /* Hide the Django-generated empty form */
+    .empty-form {
+        display: none !important;
+    }
 </style>
 {% endblock %}
 
@@ -54,34 +62,44 @@
             
             <!-- Product Variants -->
             <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Product Variants</h5>
-                    <small class="text-muted">Add at least one variant</small>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="mb-0">Product Variants</h5>
+                        <small class="text-muted">Add at least one variant</small>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-success add-variant-btn">
+                        <i class="bi bi-plus-circle"></i> Add Variant
+                    </button>
                 </div>
                 <div class="card-body">
                     {{ formset.management_form }}
                     
                     <div id="formset-container">
                         {% for form in formset %}
-                        <div class="formset-row">
+                        <div class="formset-row{% if forloop.counter0 >= formset.initial_form_count %} dynamic-form{% endif %}" data-form-index="{{ forloop.counter0 }}">
                             <div class="d-flex justify-content-between align-items-center mb-2">
                                 <h6 class="mb-0">Variant {{ forloop.counter }}</h6>
-                                {% if not forloop.first %}
-                                <span class="delete-row">
+                                <span class="delete-row" data-index="{{ forloop.counter0 }}">
                                     <i class="bi bi-x-circle"></i> Remove
                                 </span>
-                                {% endif %}
                             </div>
+                            
                             {{ form.variant_name|as_crispy_field }}
+                            
                             <div class="row">
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     {{ form.price|as_crispy_field }}
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-md-4">
+                                    {{ form.stock_quantity|as_crispy_field }}
+                                </div>
+                                <div class="col-md-4">
                                     {{ form.reorder_level|as_crispy_field }}
                                 </div>
                             </div>
+                            
                             {{ form.DELETE }}
+                            {{ form.id }}
                         </div>
                         {% endfor %}
                     </div>
@@ -97,8 +115,9 @@
                         <li>Enter product name and select category</li>
                         <li>Choose unit of measurement</li>
                         <li>Add at least one variant with price</li>
+                        <li>Enter initial stock quantity if available</li>
                         <li>Set reorder level for stock alerts</li>
-                        <li>Initial stock will be 0 (add stock later)</li>
+                        <li>Click "Add Variant" to add more variants</li>
                     </ul>
                     
                     <button type="submit" class="btn btn-primary w-100 mb-2">
@@ -118,14 +137,76 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    const formsetContainer = document.getElementById('formset-container');
+    const totalFormsInput = document.querySelector('input[name="variants-TOTAL_FORMS"]');
+    const addButton = document.querySelector('.add-variant-btn');
+    
+    // Get the last form to use as a template
+    function getEmptyFormHtml(index) {
+        const lastForm = formsetContainer.querySelector('.formset-row:last-child');
+        if (!lastForm) return '';
+        
+        let html = lastForm.outerHTML;
+        
+        // Replace all instances of the last form index with __prefix__
+        const lastIndex = parseInt(lastForm.dataset.formIndex);
+        const regex = new RegExp(`variants-${lastIndex}`, 'g');
+        html = html.replace(regex, `variants-${index}`);
+        html = html.replace(/data-form-index="\d+"/, `data-form-index="${index}"`);
+        html = html.replace(/Variant \d+/, `Variant ${index + 1}`);
+        
+        // Clear values
+        html = html.replace(/value="[^"]*"/g, 'value=""');
+        
+        // Remove any checked checkboxes
+        html = html.replace(/checked/g, '');
+        
+        return html;
+    }
+    
+    // Add new variant form
+    addButton.addEventListener('click', function() {
+        const currentTotal = parseInt(totalFormsInput.value);
+        const newFormHtml = getEmptyFormHtml(currentTotal);
+        
+        if (newFormHtml) {
+            const div = document.createElement('div');
+            div.innerHTML = newFormHtml;
+            const newForm = div.firstElementChild;
+            
+            formsetContainer.appendChild(newForm);
+            totalFormsInput.value = currentTotal + 1;
+            
+            // Reinitialize currency formatting for new form
+            if (typeof initializeCurrencyFormatting === 'function') {
+                initializeCurrencyFormatting();
+            }
+        }
+    });
+    
     // Handle delete row
     document.addEventListener('click', function(e) {
         if (e.target.closest('.delete-row')) {
-            const row = e.target.closest('.formset-row');
+            const deleteBtn = e.target.closest('.delete-row');
+            const row = deleteBtn.closest('.formset-row');
             const deleteInput = row.querySelector('input[name$="-DELETE"]');
+            
+            // Check if this is the only visible form
+            const visibleForms = formsetContainer.querySelectorAll('.formset-row:not(.to-delete)');
+            if (visibleForms.length <= 1) {
+                alert('You must have at least one variant.');
+                return;
+            }
+            
             if (deleteInput) {
                 deleteInput.checked = true;
+                row.classList.add('to-delete');
                 row.style.display = 'none';
+            } else {
+                row.remove();
+                // Update total forms count
+                const currentTotal = parseInt(totalFormsInput.value);
+                totalFormsInput.value = currentTotal - 1;
             }
         }
     });
