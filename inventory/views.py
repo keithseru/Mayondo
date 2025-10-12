@@ -135,45 +135,45 @@ def stock_movements(request):
 @login_required
 @user_passes_test(is_inventory_or_manager, login_url='users:login')
 def inventory_dashboard(request):
-    # Low stock items (below reorder level)
-    low_stock_items = ProductVariant.objects.filter(
-        is_active=True,
-        stock_quantity__lte=10
-    ).select_related('product').order_by('stock_quantity')[:10]
-    
-    # Out of stock items
-    out_of_stock = ProductVariant.objects.filter(
-        is_active=True,
-        stock_quantity=0
-    ).count()
-    
+    # Centralized active variants queryset
+    active_variants = ProductVariant.objects.filter(is_active=True)
+
+    # Low stock items
+    low_stock_items = active_variants.filter(stock_quantity__lte=10).select_related('product').order_by('stock_quantity')[:10]
+
+    # Out of stock count
+    out_of_stock = active_variants.filter(stock_quantity=0).count()
+
     # Total variants and stock value
-    total_variants = ProductVariant.objects.filter(is_active=True).count()
-    
-    # Calculate total stock value
-    variants = ProductVariant.objects.filter(is_active=True)
-    total_stock_value = sum(v.stock_quantity * v.price for v in variants)
-    
+    total_variants = active_variants.count()
+    total_stock_value = sum(v.stock_quantity * v.price for v in active_variants)
+
     # Pending orders
-    pending_orders = Order.objects.filter(status='PENDING').count()
-    
+    PENDING_STATUSES = ['PENDING', 'PARTIAL']
+    pending_orders_qs = Order.objects.filter(status__in=PENDING_STATUSES)
+    pending_orders_list = pending_orders_qs.select_related('supplier', 'created_by').order_by('-order_date')[:5]
+    pending_orders_count = pending_orders_qs.count()
+
     # Recent stock entries
-    recent_entries = StockEntry.objects.select_related(
-        'variant__product', 'entered_by'
-    ).order_by('-entry_date')[:10]
-    
+    recent_entries = StockEntry.objects.select_related('variant__product', 'entered_by').order_by('-entry_date')[:10]
+
     context = {
         'low_stock_items': low_stock_items,
         'low_stock_count': low_stock_items.count(),
         'out_of_stock': out_of_stock,
         'total_variants': total_variants,
         'total_stock_value': total_stock_value,
-        'pending_orders': pending_orders,
+        'pending_orders': pending_orders_count,
+        'pending_orders_list': pending_orders_list,
         'recent_entries': recent_entries,
-        'title': 'Inventory Dashboard'
+        'title': 'Inventory Dashboard',
+        'onboarding_hints': {
+            'pending_orders': "These orders are awaiting delivery confirmation. Click 'Confirm Delivery' once items arrive."
+        }
     }
-    
+
     return render(request, 'inventory/dashboard.html', context)
+
 
 # Reports
 @login_required
