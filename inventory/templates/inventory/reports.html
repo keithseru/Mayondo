@@ -163,17 +163,50 @@
 </div>
 
 <!-- Pending Deliveries -->
-{% if pending_orders > 0 %}
-<div class="card">
-    <div class="card-header">
+{% if pending_orders_list %}
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
         <h5 class="mb-0"><i class="bi bi-truck"></i> Pending Deliveries</h5>
+        <span class="badge bg-warning text-dark">{{ pending_orders }} order{{ pending_orders|pluralize }}</span>
     </div>
-    <div class="card-body">
-        <div class="alert alert-info mb-0">
-            <i class="bi bi-info-circle me-2"></i>
-            You have <strong>{{ pending_orders }}</strong> pending order{{ pending_orders|pluralize }} awaiting delivery.
-            <a href="{% url 'orders:order_list' %}?status=PENDING" class="alert-link">View pending orders</a>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Order ID</th>
+                        <th>Supplier</th>
+                        <th>Order Date</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in pending_orders_list %}
+                    <tr>
+                        <td><a href="{% url 'orders:order_detail' order.pk %}">#{{ order.id }}</a></td>
+                        <td>{{ order.supplier.name|default:"(No supplier)" }}</td>
+                        <td>{{ order.order_date|date:"M d, Y" }}</td>
+                        <td><span class="badge bg-secondary">{{ order.get_status_display }}</span></td>
+                        <td class="text-end">
+                            <a href="{% url 'orders:confirm_delivery' order.pk %}" class="btn btn-sm btn-success">
+                                <i class="bi bi-check-circle"></i> Confirm Delivery
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5" class="text-center text-muted">No pending deliveries found.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
+        {% if pending_orders > 10 %}
+        <div class="card-footer text-center">
+            <a href="{% url 'orders:order_list' %}?status=PENDING" class="btn btn-sm btn-outline-primary">
+                View All {{ pending_orders }} Pending Orders
+            </a>
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endif %}

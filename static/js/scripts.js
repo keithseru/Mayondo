@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeCurrencyFormatting();
 
     // Only prevent negative values on input
-    const numberInputs = document.querySelectorAll('input[type="number"]');
+    const numberInputs = document.querySelectorAll('input[type="number"]:not(.allow-negative)');
     numberInputs.forEach(input => {
         input.addEventListener('input', function() {
             if (parseFloat(this.value) < 0) {
