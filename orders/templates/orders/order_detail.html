@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load static %}
+{% load static humanize %}
 
 {% block title %}Order #{{ order.id }} - MayondoWood{% endblock %}
 
@@ -49,8 +49,8 @@
                                         {{ item.delivered_quantity }}
                                     </span>
                                 </td>
-                                <td class="text-end">UGX {{ item.unit_price|floatformat:0 }}</td>
-                                <td class="text-end"><strong>UGX {{ item.subtotal|floatformat:0 }}</strong></td>
+                                <td class="text-end">UGX {{ item.unit_price|floatformat:0|intcomma }}</td>
+                                <td class="text-end"><strong>UGX {{ item.subtotal|floatformat:0|intcomma }}</strong></td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -58,7 +58,7 @@
                             <tr class="table-light">
                                 <td colspan="5" class="text-end"><strong>Total Amount:</strong></td>
                                 <td class="text-end">
-                                    <strong class="fs-5 text-success">UGX {{ order.total_amount|floatformat:0 }}</strong>
+                                    <strong class="fs-5 text-success">UGX {{ order.total_amount|floatformat:0|intcomma }}</strong>
                                 </td>
                             </tr>
                         </tfoot>

@@ -263,26 +263,6 @@ class SaleItem(models.Model):
         if self.discount_percentage and self.discount_percentage >= 100:
             raise ValidationError({'discount_percentage': 'Discount cannot be 100% or more'})
     
-
-def save(self, *args, **kwargs):
-    """Set unit price from variant if not provided"""
-    # Only set unit_price if not provided AND product_variant is available
-    if not self.unit_price:
-        try:
-            if self.product_variant:
-                self.unit_price = self.product_variant.price
-        except:
-            pass  # If product_variant not available, skip
-    
-    super().save(*args, **kwargs)
-    
-    # Update delivery fee in the parent sale after saving item
-    try:
-        if self.sale and self.sale.delivery_required:
-            self.sale.update_delivery_fee()
-    except:
-        pass  # If sale not available yet, skip
-    
     @property
     def subtotal(self):
         """Subtotal before discount (in UGX)"""
@@ -295,7 +275,7 @@ def save(self, *args, **kwargs):
         return int(round(discount))
     
     def total_price(self):
-        """Calculate total price with discount (in UGX)"""
+        """Calculate total price with discount (in UGX) - This is a METHOD"""
         return self.subtotal - self.discount_amount
     
     @property
@@ -305,11 +285,19 @@ def save(self, *args, **kwargs):
     
     def save(self, *args, **kwargs):
         """Set unit price from variant if not provided"""
-        if not self.unit_price and self.product_variant:
-            self.unit_price = self.product_variant.price
+        # Only set unit_price if not provided AND product_variant is available
+        if not self.unit_price:
+            try:
+                if self.product_variant:
+                    self.unit_price = self.product_variant.price
+            except:
+                pass  # If product_variant not available, skip
         
         super().save(*args, **kwargs)
         
         # Update delivery fee in the parent sale after saving item
-        if hasattr(self, 'sale') and self.sale and self.sale.delivery_required:
-            self.sale.update_delivery_fee()
+        try:
+            if self.sale and self.sale.delivery_required:
+                self.sale.update_delivery_fee()
+        except:
+            pass  # If sale not available yet, skip

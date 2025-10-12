@@ -15,11 +15,11 @@ def is_manager(user):
     return user.is_authenticated and user.role == 'MANAGER'
 
 def is_inventory_or_manager(user):
-    return user.is_authenticated and user.role in ['INVENORY', 'MANAGER']
+    return user.is_authenticated and user.role in ['INVENTORY', 'MANAGER']
 
 # Stock Entry
 @login_required
-@user_passes_test(is_inventory_or_manager, login_url='login_user')
+@user_passes_test(is_inventory_or_manager, login_url='users:login')
 def stock_entry(request):
     if request.method == 'POST':
         form = StockEntryForm(request.POST)
@@ -29,7 +29,7 @@ def stock_entry(request):
             entry.save()
             messages.success(
                 request,
-                f'Stock entry recorded: {entry.variant}'
+                f'Stock entry recorded: {entry.variant} '
                 f'{'+' if entry.quantity > 0 else ""}{entry.quantity} units'
             )
             return redirect('inventory:stock_list')
@@ -44,7 +44,7 @@ def stock_entry(request):
 
 # Stock List
 @login_required
-@user_passes_test(is_inventory_or_manager, login_url='login_user')
+@user_passes_test(is_inventory_or_manager, login_url='users:login')
 def stock_list(request):
     entry_type_filter = request.GET.get('entry_type')
     variant_filter = request.GET.get('variant')
@@ -98,7 +98,7 @@ def stock_list(request):
 
 # Stock Movements (Audit Trail)
 @login_required
-@user_passes_test(is_inventory_or_manager, login_url='login_user')
+@user_passes_test(is_inventory_or_manager, login_url='users:login')
 def stock_movements(request):
     movement_type_filter = request.GET.get('movement_type')
     variant_filter = request.GET.get('variant')
@@ -133,7 +133,7 @@ def stock_movements(request):
 
 # Dashboard
 @login_required
-@user_passes_test(is_inventory_or_manager, login_url='login_user')
+@user_passes_test(is_inventory_or_manager, login_url='users:login')
 def inventory_dashboard(request):
     # Low stock items (below reorder level)
     low_stock_items = ProductVariant.objects.filter(
@@ -177,7 +177,7 @@ def inventory_dashboard(request):
 
 # Reports
 @login_required
-@user_passes_test(is_inventory_or_manager, login_url='login_user')
+@user_passes_test(is_inventory_or_manager, login_url='users:login')
 def inventory_reports(request):
     # Low stock items
     low_stock_threshold = int(request.GET.get('threshold', 10))

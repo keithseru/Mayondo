@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load static %}
+{% load static humanize %}
 
 {% block title %}Confirm Delivery - Order #{{ order.id }} - MayondoWood{% endblock %}
 
@@ -104,7 +104,7 @@
                 </div>
                 <div class="mb-0">
                     <small class="text-muted d-block">Total Amount</small>
-                    <strong>UGX {{ order.total_amount|floatformat:0 }}</strong>
+                    <strong>UGX {{ order.total_amount|floatformat:0|intcomma }}</strong>
                 </div>
             </div>
         </div>

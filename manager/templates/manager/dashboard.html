@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load static %}
+{% load static humanize %}
 
 {% block title %}Manager Dashboard - MayondoWood{% endblock %}
 
@@ -28,7 +28,7 @@
                     <div>
                         <p class="stat-label mb-2">Today's Sales</p>
                         <h2 class="stat-value mb-1">{{ today_sales }}</h2>
-                        <small class="text-muted">UGX {{ today_revenue|floatformat:0 }}</small>
+                        <small class="text-muted">UGX {{ today_revenue|floatformat:0|intcomma }}</small>
                     </div>
                     <i class="bi bi-cart-check stat-icon"></i>
                 </div>
@@ -44,7 +44,7 @@
                     <div>
                         <p class="stat-label mb-2">This Week</p>
                         <h2 class="stat-value mb-1">{{ week_sales }}</h2>
-                        <small class="text-muted">UGX {{ week_revenue|floatformat:0 }}</small>
+                        <small class="text-muted">UGX {{ week_revenue|floatformat:0|intcomma }}</small>
                     </div>
                     <i class="bi bi-graph-up stat-icon"></i>
                 </div>
@@ -60,7 +60,7 @@
                     <div>
                         <p class="stat-label mb-2">This Month</p>
                         <h2 class="stat-value mb-1">{{ month_sales }}</h2>
-                        <small class="text-muted">UGX {{ month_revenue|floatformat:0 }}</small>
+                        <small class="text-muted">UGX {{ month_revenue|floatformat:0|intcomma }}</small>
                     </div>
                     <i class="bi bi-calendar-month stat-icon"></i>
                 </div>
@@ -126,7 +126,7 @@
                     <div>
                         <p class="stat-label mb-2">Inventory Value</p>
                         <h2 class="stat-value mb-1">{{ total_products }}</h2>
-                        <small class="text-muted">UGX {{ inventory_value|floatformat:0 }}</small>
+                        <small class="text-muted">UGX {{ inventory_value|floatformat:0|intcomma }}</small>
                     </div>
                     <i class="bi bi-boxes stat-icon"></i>
                 </div>
@@ -180,7 +180,7 @@
                                     </a>
                                 </td>
                                 <td>{{ sale.customer.full_name }}</td>
-                                <td><strong>UGX {{ sale.total|floatformat:0 }}</strong></td>
+                                <td><strong>UGX {{ sale.total|floatformat:0|intcomma }}</strong></td>
                                 <td>
                                     <span class="badge badge-{{ sale.status|lower }}">
                                         {{ sale.get_status_display }}
@@ -229,7 +229,7 @@
                                     </a>
                                 </td>
                                 <td>{{ order.supplier.name }}</td>
-                                <td><strong>UGX {{ order.total_amount|floatformat:0 }}</strong></td>
+                                <td><strong>UGX {{ order.total_amount|floatformat:0|intcomma }}</strong></td>
                                 <td>
                                     <span class="badge badge-{{ order.status|lower }}">
                                         {{ order.get_status_display }}
@@ -320,7 +320,7 @@
                                 </td>
                                 <td class="text-end">
                                     <strong class="text-success">
-                                        UGX {{ customer.total_spent|floatformat:0|default:"0" }}
+                                        UGX {{ customer.total_spent|floatformat:0|default:"0"|intcomma }}
                                     </strong>
                                 </td>
                             </tr>

@@ -15,7 +15,7 @@ def is_manager(user):
     return user.is_authenticated and user.role == 'MANAGER'
 
 @login_required
-@user_passes_test(is_manager, login_url='login_user')
+@user_passes_test(is_manager, login_url='users:login')
 def manager_dashboard(request):
     """Main manager dashboard with overview of all operations"""
     
@@ -128,7 +128,7 @@ def manager_dashboard(request):
     return render(request, 'manager/dashboard.html', context)
 
 @login_required
-@user_passes_test(is_manager, login_url='login_user')
+@user_passes_test(is_manager, login_url='users:login')
 def manager_reports(request):
     """Comprehensive reports for manager"""
     

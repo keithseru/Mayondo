@@ -50,6 +50,16 @@ class Order(models.Model):
     def total_amount(self):
         return sum(item.subtotal for item in self.items.all())
     
+    @property
+    def is_fully_delivered(self):
+        """Check if all items in the order are fully delivered"""
+        return all(item.is_delivered for item in self.items.all())
+    
+    @property
+    def is_partially_delivered(self):
+        """Check if at least one item has been partially delivered"""
+        return any(item.delivered_quantity > 0 for item in self.items.all()) and not self.is_fully_delivered
+    
     
 class OrderItem(models.Model):
     '''Order Line items'''
@@ -70,10 +80,23 @@ class OrderItem(models.Model):
     def subtotal(self):
         return self.quantity * self.unit_price
     
+    @property
+    def remaining_quantity(self):
+        """Calculate remaining quantity to be delivered"""
+        return self.quantity - self.delivered_quantity
+    
     def mark_as_delivered(self, quantity=None):
+        """Mark item as delivered and update stock"""
         if quantity is None:
             quantity = self.quantity - self.delivered_quantity
+        
+        # Update delivered quantity
         self.delivered_quantity += quantity
+        
+        # Mark as fully delivered if all quantity received
         self.is_delivered = (self.delivered_quantity >= self.quantity)
+        
         self.save()
+        
+        # Update stock in the variant
         self.variant.add_stock(quantity)

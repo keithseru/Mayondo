@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load static %}
+{% load static humanize %}
 
 {% block title %}Sales Dashboard - MayondoWood{% endblock %}
 
@@ -30,7 +30,7 @@
                     <div>
                         <p class="stat-label mb-2">Today's Sales</p>
                         <h2 class="stat-value mb-1">{{ today_sales_count }}</h2>
-                        <small class="text-success">UGX {{ today_revenue|floatformat:0 }}</small>
+                        <small class="text-success">UGX {{ today_revenue|floatformat:0|intcomma }}</small>
                     </div>
                     <i class="bi bi-calendar-check stat-icon"></i>
                 </div>
@@ -45,7 +45,7 @@
                     <div>
                         <p class="stat-label mb-2">This Month</p>
                         <h2 class="stat-value mb-1">{{ month_sales_count }}</h2>
-                        <small class="text-primary">UGX {{ month_revenue|floatformat:0 }}</small>
+                        <small class="text-primary">UGX {{ month_revenue|floatformat:0|intcomma }}</small>
                     </div>
                     <i class="bi bi-graph-up-arrow stat-icon"></i>
                 </div>
@@ -76,7 +76,7 @@
                         <p class="stat-label mb-2">Average Sale</p>
                         <h2 class="stat-value mb-1">
                             {% if month_sales_count > 0 %}
-                                {{ month_revenue|floatformat:0|default:"0"|slice:":3" }}K
+                                {{ month_revenue|floatformat:0|default:"0"|intcomma }}
                             {% else %}
                                 0
                             {% endif %}
@@ -122,7 +122,7 @@
                         <td>{{ sale.customer.full_name }}</td>
                         <td>{{ sale.sale_date|date:"M d, Y H:i" }}</td>
                         <td>{{ sale.item_count }} item{{ sale.item_count|pluralize }}</td>
-                        <td><strong>UGX {{ sale.total|floatformat:0 }}</strong></td>
+                        <td><strong>UGX {{ sale.total|floatformat:0|intcomma }}</strong></td>
                         <td>
                             <span class="badge badge-{{ sale.status|lower }}">
                                 {{ sale.get_status_display }}

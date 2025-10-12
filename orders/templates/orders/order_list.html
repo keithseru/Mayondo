@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load static %}
+{% load static humanize %}
 
 {% block title %}Purchase Orders - MayondoWood{% endblock %}
 
@@ -77,6 +77,12 @@
             <table class="table table-hover">
                 <thead>
                     <tr>
+                        <th>Order ID</th>
+                        <th>Supplier</th>
+                        <th>Order Date</th>
+                        <th>Expected Delivery</th>
+                        <th class="text-end">Total Amount</th>
+                        <th class="text-center">Status</th>
                         <th class="text-end">Actions</th>
                     </tr>
                 </thead>
@@ -97,8 +103,8 @@
                                 <span class="text-muted">—</span>
                             {% endif %}
                         </td>
-                        <td class="text-end"><strong>UGX {{ order.total_amount|floatformat:0 }}</strong></td>
-                        <td>
+                        <td class="text-end"><strong>UGX {{ order.total_amount|floatformat:0|intcomma }}</strong></td>
+                        <td class="text-center">
                             <span class="badge badge-{{ order.status|lower }}">
                                 {{ order.get_status_display }}
                             </span>

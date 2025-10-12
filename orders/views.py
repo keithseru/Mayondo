@@ -19,7 +19,7 @@ def is_inventory_or_manager(user):
 
 # Orders
 @login_required
-@user_passes_test(is_inventory_or_manager, login_url='login_user')
+@user_passes_test(is_inventory_or_manager, login_url='users:login')
 def order_list(request):
     status_filter = request.GET.get('status')
     supplier_filter = request.GET.get('supplier')
@@ -68,7 +68,7 @@ def order_list(request):
     })
 
 @login_required
-@user_passes_test(is_manager, login_url="login_user")
+@user_passes_test(is_manager, login_url="users:login")
 def create_order(request):
     if request.method == "POST":
         form = OrderForm(request.POST)
@@ -102,7 +102,7 @@ def create_order(request):
     return render(request, 'orders/create_order.html', context)
 
 @login_required
-@user_passes_test(is_inventory_or_manager, login_url="login_user")
+@user_passes_test(is_inventory_or_manager, login_url="users:login")
 def confirm_delivery(request, pk):
     order = get_object_or_404(Order, pk=pk)
     
@@ -112,29 +112,83 @@ def confirm_delivery(request, pk):
 
     if request.method == 'POST':
         formset = DeliveryFormSet(request.POST, queryset=order.items.all())
+        
         if formset.is_valid():
             with transaction.atomic():
-                for form in formset:
-                    if form.cleaned_data.get('delivered_quantity', 0) > 0:
-                        item = form.save(commit=False)
-                        delivered_qty = form.cleaned_data['delivered_quantity']
-                        
-                        # Mark item as delivered
-                        item.mark_as_delivered(delivered_qty)
+                # Track if any deliveries were made
+                has_delivery = False
+                errors = []
                 
-                # Update order status
+                for form in formset:
+                    # Skip forms that don't have an instance (shouldn't happen with extra=0)
+                    if not form.instance or not form.instance.pk:
+                        continue
+                    
+                    delivered_qty = form.cleaned_data.get('delivered_quantity', 0) or 0
+                    
+                    if delivered_qty > 0:
+                        has_delivery = True
+                        
+                        # CRITICAL FIX: Get fresh instance from database, not from form
+                        item = OrderItem.objects.get(pk=form.instance.pk)
+                        
+                        # Validate remaining quantity using fresh data
+                        if delivered_qty > item.remaining_quantity:
+                            errors.append(
+                                f'Cannot deliver {delivered_qty} units of {item.variant}. '
+                                f'Only {item.remaining_quantity} remaining.'
+                            )
+                            continue
+                        
+                        try:
+                            # Mark THIS specific item as delivered and update stock
+                            item.mark_as_delivered(delivered_qty)
+                        except ValueError as e:
+                            errors.append(str(e))
+                            continue
+                
+                # If there were errors, show them and don't redirect
+                if errors:
+                    for error in errors:
+                        messages.error(request, error)
+                    return redirect('orders:confirm_delivery', pk=pk)
+                
+                if not has_delivery:
+                    messages.warning(request, 'No items were delivered. Please enter quantities greater than 0.')
+                    return redirect('orders:confirm_delivery', pk=pk)
+                
+                # Update order status based on delivery completion
                 if order.is_fully_delivered:
                     order.status = 'DELIVERED'
+                    order.received_date = timezone.now()
+                    messages.success(
+                        request, 
+                        f"Order #{order.id} fully delivered and marked as COMPLETED. Stock updated."
+                    )
                 elif order.is_partially_delivered:
                     order.status = 'PARTIAL'
+                    messages.success(
+                        request, 
+                        f"Partial delivery confirmed for Order #{order.id}. Stock updated."
+                    )
                 
-                order.received_by = request.user
-                order.received_date = timezone.now()
+                # Set received_by if not already set
+                if not order.received_by:
+                    order.received_by = request.user
+                
                 order.save()
                 
-                messages.success(request, f"Delivery confirmed for Order #{order.id}. Stock updated.")
                 return redirect('orders:order_detail', pk=order.pk)
+        else:
+            # Show formset errors
+            for i, form in enumerate(formset):
+                if form.errors:
+                    for field, errors in form.errors.items():
+                        for error in errors:
+                            messages.error(request, f"Item {i+1} - {field}: {error}")
+            messages.error(request, 'Please correct the errors in the form.')
     else:
+        # Show ALL items, not just undelivered ones, so we can see delivery progress
         formset = DeliveryFormSet(queryset=order.items.all())
 
     context = {
@@ -145,7 +199,7 @@ def confirm_delivery(request, pk):
     return render(request, 'orders/confirm_delivery.html', context)
 
 @login_required
-@user_passes_test(is_inventory_or_manager, login_url="login_user")
+@user_passes_test(is_inventory_or_manager, login_url="users:login")
 def order_detail(request, pk):
     order = get_object_or_404(
         Order.objects.select_related('supplier', 'created_by', 'received_by')
@@ -158,7 +212,7 @@ def order_detail(request, pk):
     })
 
 @login_required
-@user_passes_test(is_manager, login_url="login_user")
+@user_passes_test(is_manager, login_url="users:login")
 def delete_order(request, pk):
     order = get_object_or_404(Order, pk=pk)
     
@@ -179,7 +233,7 @@ def delete_order(request, pk):
 
 # Suppliers   
 @login_required
-@user_passes_test(is_inventory_or_manager, login_url='login_user')
+@user_passes_test(is_inventory_or_manager, login_url='users:login')
 def supplier_list(request):
     search = request.GET.get('search', '')
     
@@ -203,7 +257,7 @@ def supplier_list(request):
     })
     
 @login_required
-@user_passes_test(is_inventory_or_manager, login_url='login_user')
+@user_passes_test(is_inventory_or_manager, login_url='users:login')
 def create_supplier(request):
     if request.method == 'POST':
         form = SupplierForm(request.POST)
@@ -220,7 +274,7 @@ def create_supplier(request):
     })
     
 @login_required
-@user_passes_test(is_inventory_or_manager, login_url='login_user')
+@user_passes_test(is_inventory_or_manager, login_url='users:login')
 def update_supplier(request, pk):
     supplier = get_object_or_404(Supplier, pk=pk)
     
@@ -241,7 +295,7 @@ def update_supplier(request, pk):
     })
 
 @login_required
-@user_passes_test(is_manager, login_url='login_user')
+@user_passes_test(is_manager, login_url='users:login')
 def delete_supplier(request, pk):
     supplier = get_object_or_404(Supplier, pk=pk)
     

@@ -118,10 +118,6 @@ class SaleItemForm(forms.ModelForm):
             )
         
         return cleaned_data
-    
-    def has_changed(self):
-        """Return True only if this form actually has data"""
-        return bool(self.cleaned_data.get('product_variant'))
 
 # Formset for sale items
 SaleItemFormSet = inlineformset_factory(

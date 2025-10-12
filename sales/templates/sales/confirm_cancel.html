@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load static %}
+{% load static humanize %}
 
 {% block title %}Cancel Sale #{{ sale.id }} - MayondoWood{% endblock %}
 
@@ -45,7 +45,7 @@
                     </div>
                     <div class="col-6">
                         <small class="text-muted d-block">Total Amount</small>
-                        <strong>UGX {{ sale.total|floatformat:0 }}</strong>
+                        <strong>UGX {{ sale.total|floatformat:0|intcomma }}</strong>
                     </div>
                 </div>
                 

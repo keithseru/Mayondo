@@ -86,7 +86,7 @@ class ProductVariant(models.Model):
         if quantity <= 0:
             raise ValueError('Qunatity must be positive')
         self.stock_quantity += quantity
-        self.save(update_fields=['stock_quantity', 'updates_at'])
+        self.save(update_fields=['stock_quantity', 'updated_at'])
     
     def reduce_stock(self, quantity):
         if quantity <= 0:

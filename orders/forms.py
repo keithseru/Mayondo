@@ -77,9 +77,12 @@ class OrderItemForm(forms.ModelForm):
             f"(Current Stock: {obj.stock_quantity}, Price: UGX {obj.price:,})"
         )
         
-        # Set initial unit price from variant if available
-        if self.instance and self.instance.variant:
-            self.fields['unit_price'].initial = self.instance.variant.price
+        # Set initial unit price from variant if available - ONLY for existing instances
+        if self.instance and self.instance.pk and hasattr(self.instance, 'variant'):
+            try:
+                self.fields['unit_price'].initial = self.instance.variant.price
+            except:
+                pass
 
 
 # Formset for creating order items

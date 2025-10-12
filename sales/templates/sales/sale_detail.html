@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load static %}
+{% load static humanize %}
 
 {% block title %}Sale #{{ sale.id }} - MayondoWood{% endblock %}
 
@@ -78,8 +78,8 @@
                                     <strong>{{ item.product_variant.product.name }}</strong><br>
                                     <small class="text-muted">{{ item.product_variant.variant_name }}</small>
                                 </td>
-                                <td class="text-center">{{ item.quantity }}</td>
-                                <td class="text-end">UGX {{ item.unit_price|floatformat:0 }}</td>
+                                <td class="text-center">{{ item.quantity|intcomma }}</td>
+                                <td class="text-end">UGX {{ item.unit_price|floatformat:0|intcomma }}</td>
                                 <td class="text-center">
                                     {% if item.discount_percentage > 0 %}
                                         <span class="badge bg-success">{{ item.discount_percentage }}%</span>
@@ -87,14 +87,14 @@
                                         -
                                     {% endif %}
                                 </td>
-                                <td class="text-end"><strong>UGX {{ item.total_price|floatformat:0 }}</strong></td>
+                                <td class="text-end"><strong>UGX {{ item.total_price|floatformat:0|intcomma }}</strong></td>
                             </tr>
                             {% endfor %}
                         </tbody>
                         <tfoot class="table-light">
                             <tr>
                                 <td colspan="4" class="text-end"><strong>Subtotal:</strong></td>
-                                <td class="text-end"><strong>UGX {{ sale.subtotal|floatformat:0 }}</strong></td>
+                                <td class="text-end"><strong>UGX {{ sale.subtotal|floatformat:0|intcomma }}</strong></td>
                             </tr>
                             {% if sale.delivery_required %}
                             <tr>
@@ -102,13 +102,13 @@
                                     <strong>Delivery Fee (5%):</strong>
                                     <i class="bi bi-truck text-warning ms-1"></i>
                                 </td>
-                                <td class="text-end"><strong>UGX {{ sale.delivery_fee|floatformat:0 }}</strong></td>
+                                <td class="text-end"><strong>UGX {{ sale.delivery_fee|floatformat:0|intcomma }}</strong></td>
                             </tr>
                             {% endif %}
                             <tr class="table-success">
                                 <td colspan="4" class="text-end"><strong>TOTAL:</strong></td>
                                 <td class="text-end">
-                                    <h5 class="mb-0 text-success">UGX {{ sale.total|floatformat:0 }}</h5>
+                                    <h5 class="mb-0 text-success">UGX {{ sale.total|floatformat:0|intcomma }}</h5>
                                 </td>
                             </tr>
                         </tfoot>
@@ -185,22 +185,22 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between mb-2">
                     <span class="text-muted">Total Items:</span>
-                    <strong>{{ sale.item_count }}</strong>
+                    <strong>{{ sale.item_count|intcomma }}</strong>
                 </div>
                 <div class="d-flex justify-content-between mb-2">
                     <span class="text-muted">Subtotal:</span>
-                    <strong>UGX {{ sale.subtotal|floatformat:0 }}</strong>
+                    <strong>UGX {{ sale.subtotal|floatformat:0|intcomma }}</strong>
                 </div>
                 {% if sale.delivery_required %}
                 <div class="d-flex justify-content-between mb-2">
                     <span class="text-muted">Delivery:</span>
-                    <strong class="text-warning">UGX {{ sale.delivery_fee|floatformat:0 }}</strong>
+                    <strong class="text-warning">UGX {{ sale.delivery_fee|floatformat:0|intcomma }}</strong>
                 </div>
                 {% endif %}
                 <hr>
                 <div class="d-flex justify-content-between">
                     <span class="text-muted"><strong>Total:</strong></span>
-                    <h5 class="text-success mb-0">UGX {{ sale.total|floatformat:0 }}</h5>
+                    <h5 class="text-success mb-0">UGX {{ sale.total|floatformat:0|intcomma }}</h5>
                 </div>
             </div>
         </div>

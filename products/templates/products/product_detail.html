@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load static %}
+{% load static humanize %}
 
 {% block title %}{{ product.name }} - MayondoWood{% endblock %}
 
@@ -46,13 +46,13 @@
                             {% for variant in product.variants.all %}
                             <tr>
                                 <td><strong>{{ variant.variant_name }}</strong></td>
-                                <td class="text-end">UGX {{ variant.price|floatformat:0 }}</td>
+                                <td class="text-end">UGX {{ variant.price|floatformat:0|intcomma }}</td>
                                 <td class="text-end">
                                     <span class="badge {% if variant.stock_quantity == 0 %}bg-danger{% elif variant.stock_quantity <= variant.reorder_level %}bg-warning text-dark{% else %}bg-success{% endif %}">
-                                        {{ variant.stock_quantity }}
+                                        {{ variant.stock_quantity|intcomma }}
                                     </span>
                                 </td>
-                                <td class="text-end">{{ variant.reorder_level }}</td>
+                                <td class="text-end">{{ variant.reorder_level|intcomma }}</td>
                                 <td>
                                     {% if variant.is_active %}
                                         <span class="badge bg-success">Active</span>
@@ -113,13 +113,7 @@
                 
                 <div class="mb-3">
                     <small class="text-muted d-block">Total Stock</small>
-                    {% with total_stock=product.variants.all|length %}
-                    <strong>
-                        {% for variant in product.variants.all %}
-                            {% if forloop.first %}{{ variant.stock_quantity }}{% else %}+{{ variant.stock_quantity }}{% endif %}
-                        {% endfor %}
-                    </strong>
-                    {% endwith %}
+                    <strong>{{ total_stock|intcomma }}</strong>
                 </div>
                 
                 <div class="mb-0">

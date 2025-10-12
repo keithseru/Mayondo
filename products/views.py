@@ -102,14 +102,19 @@ def product_detail(request, pk):
         .prefetch_related('variants'),
         pk=pk
     )
+    
+    # Calculate total stock
+    total_stock = sum(variant.stock_quantity for variant in product.variants.all())
+    
     return render(request, "products/product_detail.html", {
         "product": product,
+        "total_stock": total_stock,
         "title": f"{product.name} - Details"
     })
 
 # Manager only views
 @login_required
-@user_passes_test(is_manager, login_url='login_user')
+@user_passes_test(is_manager, login_url='users:login')
 def create_product(request):
     if request.method == 'POST':
         form = ProductForm(request.POST)
@@ -161,7 +166,7 @@ def create_product(request):
     })
 
 @login_required
-@user_passes_test(is_manager, login_url='login_user')
+@user_passes_test(is_manager, login_url='users:login')
 def update_product(request, pk):
     product = get_object_or_404(Product, pk=pk)
     
@@ -241,7 +246,7 @@ def update_product(request, pk):
     return render(request, 'products/create_product.html', context)
 
 @login_required
-@user_passes_test(is_manager, login_url="login_user")
+@user_passes_test(is_manager, login_url="users:login")
 def delete_product(request, pk):
     product = get_object_or_404(Product, pk=pk)
 
@@ -270,7 +275,7 @@ def delete_product(request, pk):
 
 # Category Management
 @login_required
-@user_passes_test(is_manager, login_url='login_user')
+@user_passes_test(is_manager, login_url='users:login')
 def category_unit_list(request):
     categories = Category.objects.filter(is_active=True).order_by('name')
     units = Unit.objects.filter(is_active=True).order_by('name')
@@ -300,7 +305,7 @@ def create_category(request):
     })
 
 @login_required
-@user_passes_test(is_manager, login_url='login_user')
+@user_passes_test(is_manager, login_url='users:login')
 def update_category(request, pk):
     category = get_object_or_404(Category, pk=pk)
     
@@ -321,7 +326,7 @@ def update_category(request, pk):
     })
 
 @login_required
-@user_passes_test(is_manager, login_url='login_user')
+@user_passes_test(is_manager, login_url='users:login')
 def delete_category(request, pk):
     category = get_object_or_404(Category, pk=pk)
     
@@ -347,7 +352,7 @@ def delete_category(request, pk):
 
 # Unit Management
 @login_required
-@user_passes_test(is_manager, login_url='login_user')
+@user_passes_test(is_manager, login_url='users:login')
 def create_unit(request):
     if request.method == 'POST':
         form = UnitForm(request.POST)
@@ -364,7 +369,7 @@ def create_unit(request):
     })
 
 @login_required
-@user_passes_test(is_manager, login_url='login_user')
+@user_passes_test(is_manager, login_url='users:login')
 def update_unit(request, pk):
     unit = get_object_or_404(Unit, pk=pk)
     
@@ -385,7 +390,7 @@ def update_unit(request, pk):
     })
 
 @login_required
-@user_passes_test(is_manager, login_url='login_user')
+@user_passes_test(is_manager, login_url='users:login')
 def delete_unit(request, pk):
     unit = get_object_or_404(Unit, pk=pk)
     

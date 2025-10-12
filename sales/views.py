@@ -24,7 +24,7 @@ def is_sales_or_manager(user):
 
 # List of sales
 @login_required
-@user_passes_test(is_sales_or_manager, login_url='login_user')
+@user_passes_test(is_sales_or_manager, login_url='users:login')
 def sale_list(request):
     status_filter = request.GET.get('status')
     customer_filter = request.GET.get('customer')
@@ -92,7 +92,7 @@ def sale_list(request):
 
 # Create new sale
 @login_required
-@user_passes_test(is_sales_or_manager, login_url='login_user')
+@user_passes_test(is_sales_or_manager, login_url='users:login')
 def create_sale(request):
     if request.method == 'POST':
         form = SaleForm(request.POST)
@@ -164,7 +164,7 @@ def create_sale(request):
 
 # Details of a sale
 @login_required
-@user_passes_test(is_sales_or_manager, login_url='login_user')
+@user_passes_test(is_sales_or_manager, login_url='users:login')
 def sale_detail(request, pk):
     sale = get_object_or_404(
         Sale.objects.select_related('customer', 'created_by').prefetch_related('items__product_variant__product'), pk=pk
@@ -173,7 +173,7 @@ def sale_detail(request, pk):
 
 # Complete sale confirmation
 @login_required
-@user_passes_test(is_sales_or_manager, login_url='login_user')
+@user_passes_test(is_sales_or_manager, login_url='users:login')
 def complete_sale(request, pk):
     '''Complete a sale and update inventory'''
     sale = get_object_or_404(Sale, pk=pk)
@@ -202,7 +202,7 @@ def complete_sale(request, pk):
 
 # Cancel sale
 @login_required
-@user_passes_test(is_manager, login_url='login_user')
+@user_passes_test(is_manager, login_url='users:login')
 def cancel_sale(request, pk):
     '''Cancel a sale and restore inventory if it ws completed'''
     sale = get_object_or_404(Sale, pk=pk)
@@ -230,7 +230,7 @@ def cancel_sale(request, pk):
 
 # Delete a sale
 @login_required
-@user_passes_test(is_manager, login_url='login_user')
+@user_passes_test(is_manager, login_url='users:login')
 def delete_sale(request, pk):
     sale = get_object_or_404(Sale, pk=pk)
     
@@ -252,7 +252,7 @@ def delete_sale(request, pk):
 
 # CUSTOMER MANAGEMENT VIEWS
 @login_required
-@user_passes_test(is_sales_or_manager, login_url='login_user')
+@user_passes_test(is_sales_or_manager, login_url='users:login')
 def customer_list(request):
     search = request.GET.get('search', '')
     
@@ -285,7 +285,7 @@ def customer_list(request):
     
 # Create a new customer
 @login_required
-@user_passes_test(is_sales_or_manager, login_url='login_user')
+@user_passes_test(is_sales_or_manager, login_url='users:login')
 def create_customer(request):
     if request.method == 'POST':
         form = CustomerForm(request.POST)
@@ -308,7 +308,7 @@ def create_customer(request):
 
 # Update customer details
 @login_required
-@user_passes_test(is_sales_or_manager, login_url='login_user')
+@user_passes_test(is_sales_or_manager, login_url='users:login')
 def update_customer(request, pk):
     customer = get_object_or_404(Customer, pk=pk)
     
@@ -332,7 +332,7 @@ def update_customer(request, pk):
 
 # Delete a customer
 @login_required
-@user_passes_test(is_manager, login_url='login_user')
+@user_passes_test(is_manager, login_url='users:login')
 def delete_customer(request, pk):
     customer = get_object_or_404(Customer, pk=pk)
     
@@ -359,7 +359,7 @@ def delete_customer(request, pk):
 
 # Sales Dashboard
 @login_required
-@user_passes_test(is_sales_or_manager, login_url='login_user')
+@user_passes_test(is_sales_or_manager, login_url='users:login')
 def sales_dashboard(request):
     # COMPLETED SALES ONLY
     #Today's stats
@@ -396,7 +396,7 @@ def sales_dashboard(request):
 
 # Reports
 @login_required
-@user_passes_test(is_sales_or_manager, login_url='login_user')
+@user_passes_test(is_sales_or_manager, login_url='users:login')
 def sales_reports(request):
     #Date range
     date_from = request.GET.get('date_from')

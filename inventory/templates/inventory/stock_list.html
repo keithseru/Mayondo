@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load static %}
+{% load static humanize%}
 
 {% block title %}Stock Entries - MayondoWood{% endblock %}
 
@@ -97,7 +97,7 @@
                         </td>
                         <td class="text-end">
                             <span class="{% if entry.quantity > 0 %}text-success{% else %}text-danger{% endif %} fw-bold">
-                                {% if entry.quantity > 0 %}+{% endif %}{{ entry.quantity }}
+                                {% if entry.quantity > 0 %}+{% endif %}{{ entry.quantity|intcomma }}
                             </span>
                         </td>
                         <td>{{ entry.entered_by.username|default:"N/A" }}</td>

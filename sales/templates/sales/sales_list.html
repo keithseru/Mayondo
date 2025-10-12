@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load static %}
+{% load static humanize %}
 
 {% block title %}Sales List - MayondoWood{% endblock %}
 
@@ -108,15 +108,15 @@
                             <span class="badge bg-info">{{ sale.get_payment_method_display }}</span>
                         </td>
                         <td>{{ sale.item_count }}</td>
-                        <td>UGX {{ sale.subtotal|floatformat:0 }}</td>
+                        <td>UGX {{ sale.subtotal|floatformat:0|intcomma }}</td>
                         <td>
                             {% if sale.delivery_required %}
-                                <span class="badge bg-warning text-dark">UGX {{ sale.delivery_fee|floatformat:0 }}</span>
+                                <span class="badge bg-warning text-dark">UGX {{ sale.delivery_fee|floatformat:0|intcomma }}</span>
                             {% else %}
                                 <span class="text-muted">-</span>
                             {% endif %}
                         </td>
-                        <td><strong class="text-success">UGX {{ sale.total|floatformat:0 }}</strong></td>
+                        <td><strong class="text-success">UGX {{ sale.total|floatformat:0|intcomma }}</strong></td>
                         <td>
                             <span class="badge badge-{{ sale.status|lower }}">
                                 {{ sale.get_status_display }}

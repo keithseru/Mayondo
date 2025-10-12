@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load static %}
+{% load static humanize %}
 
 {% block title %}Complete Sale #{{ sale.id }} - MayondoWood{% endblock %}
 
@@ -36,7 +36,7 @@
                 <div class="row mb-3">
                     <div class="col-6">
                         <small class="text-muted d-block">Total Amount</small>
-                        <strong class="text-success fs-5">UGX {{ sale.total|floatformat:0 }}</strong>
+                        <strong class="text-success fs-5">UGX {{ sale.total|floatformat:0|intcomma }}</strong>
                     </div>
                     <div class="col-6">
                         <small class="text-muted d-block">Payment Method</small>
@@ -62,10 +62,10 @@
                                     <strong>{{ item.product_variant.product.name }}</strong>
                                     <br><small class="text-muted">{{ item.product_variant.variant_name }}</small>
                                 </td>
-                                <td class="text-end">{{ item.quantity }}</td>
-                                <td class="text-end">{{ item.product_variant.stock_quantity }}</td>
+                                <td class="text-end">{{ item.quantity|intcomma }}</td>
+                                <td class="text-end">{{ item.product_variant.stock_quantity|intcomma }}</td>
                                 <td class="text-end">
-                                    <strong>{{ item.product_variant.stock_quantity|add:"-"|add:item.quantity }}</strong>
+                                    <strong>{{ item.product_variant.stock_quantity|add:"-"|add:item.quantity|intcomma }}</strong>
                                 </td>
                             </tr>
                             {% endfor %}

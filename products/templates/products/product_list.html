@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load static %}
+{% load static humanize %}
 
 {% block title %}Products - MayondoWood{% endblock %}
 
@@ -113,9 +113,9 @@
                             <div class="mb-1">
                                 <small>
                                     <strong>{{ variant.variant_name }}</strong>: 
-                                    UGX {{ variant.price|floatformat:0 }} 
+                                    UGX {{ variant.price|floatformat:0|intcomma }} 
                                     <span class="badge {% if variant.stock_quantity == 0 %}bg-danger{% elif variant.stock_quantity <= variant.reorder_level %}bg-warning text-dark{% else %}bg-success{% endif %}">
-                                        Stock: {{ variant.stock_quantity }}
+                                        Stock: {{ variant.stock_quantity|intcomma }}
                                     </span>
                                 </small>
                             </div>
