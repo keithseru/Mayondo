@@ -184,12 +184,12 @@ class SalesReportPDF(PDFReportGenerator):
         # Header
         self.add_header()
         
-        # Summary boxes
+        # Summary boxes - Updated to include all status counts
         summary_data = [
-            {'label': 'Total Sales:', 'value': str(self.summary['total_sales'])},
-            {'label': 'Total Revenue:', 'value': f"UGX {self.summary['total_revenue']:,.0f}"},
-            {'label': 'Average Sale:', 'value': f"UGX {self.summary['average_sale']:,.0f}"},
-            {'label': 'Total Customers:', 'value': str(self.summary['total_customers'])},
+            {'label': 'Total Sales', 'value': self.summary['total_sales']},
+            {'label': 'Total Revenue', 'value': f"UGX {self.summary['total_revenue']:,}"},
+            {'label': 'Average Sale', 'value': f"UGX {self.summary['average_sale']:,.0f}"},
+            {'label': 'Total Customers', 'value': self.summary['total_customers']},
             {'label': 'Completed', 'value': self.summary.get('completed_sales', 0)},
             {'label': 'Pending', 'value': self.summary.get('pending_sales', 0)},
             {'label': 'Cancelled', 'value': self.summary.get('cancelled_sales', 0)},
@@ -199,19 +199,17 @@ class SalesReportPDF(PDFReportGenerator):
         
         # Sales table
         self.add_section_heading("Sales Transactions")
-        headers = ['Date', 'Customer', 'Items', 'Amount (UGX)', 'Status']
+        headers = ['Date', 'Customer', 'Items', 'Amount', 'Status']
         rows = []
         
         for sale in self.sales_data:
             rows.append([
                 sale['date'].strftime('%d/%m/%Y'),
-                sale['customer'][:30],  # Truncate long names
+                sale['customer'],
                 str(sale['items']),
-                f"{sale['amount']:,.0f}",
+                f"UGX {sale['amount']:,}",
                 sale['status']
             ])
-        
-        # Add table with specific column widths
         self.add_table(headers, rows, col_widths=[1.2*inch, 2*inch, 0.8*inch, 1.5*inch, 1*inch])
         
         return self

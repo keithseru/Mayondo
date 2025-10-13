@@ -36,14 +36,10 @@ def stock_entry(request):
             entry_type = entry.entry_type
 
             # Normalize quantity based on entry type
-            # DAMAGE should always reduce stock (negative)
             if entry_type == 'DAMAGE':
-                qty = -abs(qty)  # Force negative
-            # ADDITION and RETURN should always add stock (positive)
+                qty = -abs(qty)
             elif entry_type in ['ADDITION', 'RETURN']:
-                qty = abs(qty)   # Force positive
-            # ADJUSTMENT and CORRECTION can be either positive or negative
-            # User's input is respected
+                qty = abs(qty)
 
             # Validate stock won't go negative
             variant = entry.variant
@@ -93,7 +89,6 @@ def stock_list(request):
     
     entries = StockEntry.objects.select_related('variant__product', 'entered_by')
     
-    #Filters
     if entry_type_filter:
         entries = entries.filter(entry_type=entry_type_filter)
     if variant_filter:
@@ -101,7 +96,6 @@ def stock_list(request):
     if date_from:
         entries = entries.filter(entry_date__gte=date_from)
     
-    #CSV Export
     if export == 'csv':
         response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename="stock_entries.csv"'
@@ -119,12 +113,10 @@ def stock_list(request):
             ])
         return response
     
-    #Pagination
     paginator = Paginator(entries.order_by('-entry_date'), 20)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
-    # Get variants for filter
     variants = ProductVariant.objects.filter(is_active=True).select_related('product')
     
     return render(request, 'inventory/stock_list.html', {
@@ -136,7 +128,7 @@ def stock_list(request):
         'title': 'Stock Entries'
     })
 
-# Stock Movements (Audit Trail)
+# Stock Movements
 @login_required
 @user_passes_test(is_inventory_or_manager, login_url='users:login')
 def stock_movements(request):
@@ -146,7 +138,6 @@ def stock_movements(request):
     
     movements = StockMovement.objects.select_related('variant__product', 'performed_by')
     
-    # Filters
     if movement_type_filter:
         movements = movements.filter(movement_type=movement_type_filter)
     if variant_filter:
@@ -154,12 +145,10 @@ def stock_movements(request):
     if date_from:
         movements = movements.filter(created_at__gte=date_from)
     
-    # Pagination
     paginator = Paginator(movements.order_by('-created_at'), 25)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
-    # Get variants for filter
     variants = ProductVariant.objects.filter(is_active=True).select_related('product')
     
     return render(request, 'inventory/stock_movements.html', {
@@ -175,26 +164,17 @@ def stock_movements(request):
 @login_required
 @user_passes_test(is_inventory_or_manager, login_url='users:login')
 def inventory_dashboard(request):
-    # Centralized active variants queryset
     active_variants = ProductVariant.objects.filter(is_active=True)
-
-    # Low stock items
     low_stock_items = active_variants.filter(stock_quantity__lte=10).select_related('product').order_by('stock_quantity')[:10]
-
-    # Out of stock count
     out_of_stock = active_variants.filter(stock_quantity=0).count()
-
-    # Total variants and stock value
     total_variants = active_variants.count()
     total_stock_value = sum(v.stock_quantity * v.price for v in active_variants)
 
-    # Pending orders
     PENDING_STATUSES = ['PENDING', 'PARTIAL']
     pending_orders_qs = Order.objects.filter(status__in=PENDING_STATUSES)
     pending_orders_list = pending_orders_qs.select_related('supplier', 'created_by').order_by('-order_date')[:5]
     pending_orders_count = pending_orders_qs.count()
 
-    # Recent stock entries
     recent_entries = StockEntry.objects.select_related('variant__product', 'entered_by').order_by('-entry_date')[:10]
 
     context = {
@@ -219,27 +199,18 @@ def inventory_dashboard(request):
 @login_required
 @user_passes_test(is_inventory_or_manager, login_url='users:login')
 def inventory_reports(request):
-    # Threshold for low stock (default: 10)
     low_stock_threshold = int(request.GET.get('threshold', 10))
-
-    # Active variants
     active_variants = ProductVariant.objects.filter(is_active=True)
 
-    # Low stock items
     low_stock_items = active_variants.filter(
         stock_quantity__lte=low_stock_threshold
     ).select_related('product', 'product__category').order_by('stock_quantity')
 
-    # Out of stock items
-    out_of_stock_items = active_variants.filter(
-        stock_quantity=0
-    ).select_related('product')
+    out_of_stock_items = active_variants.filter(stock_quantity=0).select_related('product')
 
-    # Total inventory value and item count
     total_stock_value = sum(v.stock_quantity * v.price for v in active_variants)
     total_items = sum(v.stock_quantity for v in active_variants)
 
-    # Stock by category
     categories = Category.objects.filter(is_active=True)
     category_stock = []
     for category in categories:
@@ -253,7 +224,6 @@ def inventory_reports(request):
             'variant_count': variants.count()
         })
 
-    # Pending deliveries
     PENDING_STATUSES = ['PENDING', 'PARTIAL']
     pending_orders_qs = Order.objects.filter(status__in=PENDING_STATUSES)
     pending_orders_list = pending_orders_qs.select_related('supplier', 'created_by').order_by('-order_date')[:10]
@@ -276,6 +246,7 @@ def inventory_reports(request):
 
     return render(request, 'inventory/reports.html', context)
 
+# Export Inventory Report - ONLY ONE FUNCTION, NO DUPLICATES!
 @login_required
 @user_passes_test(is_inventory_or_manager, login_url='users:login')
 def export_inventory_report(request):
@@ -283,22 +254,35 @@ def export_inventory_report(request):
     export_format = request.GET.get('format', 'pdf')
     display = request.GET.get('display', 'download')
     
-    # Get inventory data - ALL active variants
+    # Get ALL active variants
     active_variants = ProductVariant.objects.filter(is_active=True).select_related('product', 'product__category')
     
-    # Low stock items
+    # Count unique products (not variants)
+    from products.models import Product
+    total_products = Product.objects.filter(
+        is_active=True,
+        variants__is_active=True
+    ).distinct().count()
+    
+    # Count total variants
+    total_variants = active_variants.count()
+    
+    # Count total items in stock (sum of all stock quantities)
+    total_items_in_stock = sum(v.stock_quantity for v in active_variants)
+    
+    # Low stock items threshold
     low_stock_threshold = int(request.GET.get('threshold', 10))
-    low_stock_items = active_variants.filter(
-        stock_quantity__lte=low_stock_threshold
-    )
+    
+    # Filter for low stock items
+    low_stock_items = active_variants.filter(stock_quantity__lte=low_stock_threshold)
+    low_stock_count = low_stock_items.count()
     
     # Out of stock items
     out_of_stock_items = active_variants.filter(stock_quantity=0)
+    out_of_stock_count = out_of_stock_items.count()
     
-    # Prepare data for low stock items (for the detailed table)
-    inventory_data = {
-        'low_stock': []
-    }
+    # Prepare data for low stock items table
+    inventory_data = {'low_stock': []}
     
     for item in low_stock_items:
         inventory_data['low_stock'].append({
@@ -308,20 +292,14 @@ def export_inventory_report(request):
             'reorder_level': item.reorder_level,
         })
     
-    # Calculate summary - Count ALL active variants
-    total_products = active_variants.count()  # This should be 621
-    low_stock_count = low_stock_items.count()  # Items below threshold
-    out_of_stock_count = out_of_stock_items.count()  # Items with 0 stock
+    # Calculate total value
     total_value = sum(v.stock_quantity * v.price for v in active_variants)
     
-    # Debug: Print to console to verify counts
-    print(f"DEBUG - Total Products: {total_products}")
-    print(f"DEBUG - Low Stock: {low_stock_count}")
-    print(f"DEBUG - Out of Stock: {out_of_stock_count}")
-    print(f"DEBUG - Total Value: {total_value}")
-    
+    # Build summary dictionary with ALL counts
     summary = {
-        'total_products': total_products,  # Should show 621
+        'total_products': total_products,        # Unique products (e.g., 20)
+        'total_variants': total_variants,        # Total variants (e.g., 26)
+        'total_items': total_items_in_stock,     # Total items in stock (e.g., 621)
         'low_stock': low_stock_count,
         'out_of_stock': out_of_stock_count,
         'total_value': total_value,
@@ -329,7 +307,6 @@ def export_inventory_report(request):
     
     # Generate report
     if export_format == 'pdf':
-        # Generate PDF
         buffer = io.BytesIO()
         pdf_generator = InventoryReportPDF(inventory_data, summary)
         pdf_generator.build()
@@ -345,83 +322,6 @@ def export_inventory_report(request):
             response['Content-Disposition'] = f'attachment; filename="{filename}"'
         
     elif export_format == 'excel':
-        # Generate Excel
-        buffer = io.BytesIO()
-        excel_generator = InventoryReportExcel(inventory_data, summary)
-        excel_generator.build()
-        excel_generator.save(buffer)
-        buffer.seek(0)
-        
-        response = HttpResponse(
-            buffer.read(),
-            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        )
-        filename = f'inventory_report_{timezone.now().strftime("%Y%m%d")}.xlsx'
-        response['Content-Disposition'] = f'attachment; filename="{filename}"'
-    
-    else:
-        return HttpResponse("Invalid format", status=400)
-    
-    return response
-@login_required
-@user_passes_test(is_inventory_or_manager, login_url='users:login')
-def export_inventory_report(request):
-    """Export inventory report as PDF or Excel"""
-    export_format = request.GET.get('format', 'pdf')
-    
-    # Get inventory data
-    active_variants = ProductVariant.objects.filter(is_active=True)
-    
-    # Low stock items (threshold: 10 or custom)
-    low_stock_threshold = int(request.GET.get('threshold', 10))
-    low_stock_items = active_variants.filter(
-        stock_quantity__lte=low_stock_threshold
-    ).select_related('product', 'product__category')
-    
-    # Out of stock items
-    out_of_stock_items = active_variants.filter(stock_quantity=0)
-    
-    # Prepare data for low stock items
-    inventory_data = {
-        'low_stock': []
-    }
-    
-    for item in low_stock_items:
-        inventory_data['low_stock'].append({
-            'product': item.product.name,
-            'variant': item.variant_name,
-            'stock': item.stock_quantity,
-            'reorder_level': item.reorder_level,
-        })
-    
-    # Calculate summary - FIXED: now counts ALL active products
-    total_products = active_variants.count()  # All active variants
-    low_stock = low_stock_items.count()
-    out_of_stock = out_of_stock_items.count()
-    total_value = sum(v.stock_quantity * v.price for v in active_variants)
-    
-    summary = {
-        'total_products': total_products,  # Now shows correct total
-        'low_stock': low_stock,
-        'out_of_stock': out_of_stock,
-        'total_value': total_value,
-    }
-    
-    # Generate report
-    if export_format == 'pdf':
-        # Generate PDF
-        buffer = io.BytesIO()
-        pdf_generator = InventoryReportPDF(inventory_data, summary)
-        pdf_generator.build()
-        pdf_generator.generate(buffer)
-        buffer.seek(0)
-        
-        response = HttpResponse(buffer.read(), content_type='application/pdf')
-        filename = f'inventory_report_{timezone.now().strftime("%Y%m%d")}.pdf'
-        response['Content-Disposition'] = f'attachment; filename="{filename}"'
-        
-    elif export_format == 'excel':
-        # Generate Excel
         buffer = io.BytesIO()
         excel_generator = InventoryReportExcel(inventory_data, summary)
         excel_generator.build()

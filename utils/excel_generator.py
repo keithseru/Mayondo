@@ -336,7 +336,7 @@ class SalesReportExcel(ExcelReportGenerator):
         chart.legend.overlay = False  # Don't overlay on chart
 
         # Position chart to the right with good spacing
-        chart_sheet.add_chart(chart, "D4")  # Aligned with table header
+        chart_sheet.add_chart(chart, "D3")  # Aligned with table header
 
 class InventoryReportExcel(ExcelReportGenerator):
     """Inventory report Excel generator"""
