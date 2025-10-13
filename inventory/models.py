@@ -33,13 +33,7 @@ class StockEntry(models.Model):
         return f'{self.variant} - {sign}{self.quantity} units'
     
     def save(self, *args, **kwargs):
-        is_new = self.pk is None
-        if is_new:
-            super().save(*args, **kwargs)
-            self.variant.stock_quantity += self.quantity
-            self.variant.save(update_fields=['stock_quantity', 'updated_at'])
-        else:
-            super().save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
 class StockMovement(models.Model):
     '''Audit trail for stock changes'''
