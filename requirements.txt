@@ -1,7 +1,22 @@
-asgiref==3.10.0
-crispy-bootstrap5==2024.2
-Django==5.1.7
-django-crispy-forms==2.1
+asgiref==3.10.0 # Django ASGI support
+charset-normalizer==3.4.3 # HTTP requests
+contourpy==1.3.3    # data visualization
+crispy-bootstrap5==2024.2 # Bootstrap 5 for crispy forms
+cycler==0.12.1  # data visualization
+Django==5.1.7 # web framework
+django-crispy-forms==2.1   # enhanced form rendering
+et_xmlfile==2.0.0
+fonttools==4.60.1
+kiwisolver==1.4.9 
+matplotlib==3.10.7 # data visualization
+numpy==2.3.3 
+openpyxl==3.1.5 # excel generation
+packaging==25.0
+pillow==11.3.0 # image processing
+pyparsing==3.2.5
+python-dateutil==2.9.0.post0
 python-dotenv==1.0.0
+reportlab==4.4.4 # PDF generation
+six==1.17.0
 sqlparse==0.5.3
 tzdata==2025.2
