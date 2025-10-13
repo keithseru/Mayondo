@@ -5,13 +5,13 @@ from django.core.exceptions import ValidationError
 from django.db.models import Sum, Count, Q
 from django.core.paginator import Paginator
 from django.http import HttpResponse
-from django.utils.timezone import now
+from django.utils import timezone
 from django.db import transaction
 from utils.pdf_generator import SalesReportPDF
 from utils.excel_generator import SalesReportExcel
 import io
 import csv
-from datetime import datetime, timezone
+from datetime import datetime
 from .models import Sale, Customer, SaleItem
 from .forms import SaleForm, CustomerForm, SaleItemFormSet
 
@@ -479,14 +479,44 @@ def export_sales_report(request):
     
     # Date reange filters 
     if not date_from:
-        date_from = timezone().now.replace(day=1).date()
+        date_from = timezone.now().replace(day=1).date()
     else:
-        date_from = datetime.strptime(date_from, '%Y-%m-%d').date()
+        # Try multiple date formats
+        date_formats = ['%Y-%m-%d', '%b. %d, %Y', '%B %d, %Y', '%m/%d/%Y']
+        date_from_parsed = None
+        
+        for fmt in date_formats:
+            try:
+                date_from_parsed = datetime.strptime(date_from, fmt).date()
+                break
+            except ValueError:
+                continue
+        
+        if date_from_parsed:
+            date_from = date_from_parsed
+        else:
+            # Fallback to first day of current month
+            date_from = timezone.now().replace(day=1).date()
     
     if not date_to:
-        date_to = timezone().now()
+        date_to = timezone.now().date()
     else:
-        date_to = datetime.strptime(date_to, '%Y-%m-%d').date()
+        # Try multiple date formats
+        date_formats = ['%Y-%m-%d', '%b. %d, %Y', '%B %d, %Y', '%m/%d/%Y']
+        date_to_parsed = None
+        
+        for fmt in date_formats:
+            try:
+                date_to_parsed = datetime.strptime(date_to, fmt).date()
+                break
+            except ValueError:
+                continue
+        
+        if date_to_parsed:
+            date_to = date_to_parsed
+        else:
+            # Fallback to today
+            date_to = timezone.now().date()
         
     # Get sales daa
     sales = Sale.objects.filter(
@@ -498,7 +528,7 @@ def export_sales_report(request):
     # Prepare data 
     sales_data = []
     for sale in sales:
-        sales_data.apped({
+        sales_data.append({
             'date': sale.sale_date,
             'customer': sale.customer.full_name,
             'items':sale.item_count,
@@ -529,7 +559,7 @@ def export_sales_report(request):
         buffer.seek(0)
         
         response = HttpResponse(buffer.read(), content_type='application/pdf')
-        filename = f'sales_report_{date_from}_{date_to}'.pdf
+        filename = f'sales_report_{date_from}_{date_to}.pdf'
         response['Content-Disposition'] = f'attachament; filename="{filename}"'
     
     elif export_format == 'excel':
