@@ -7,8 +7,11 @@ from django.core.paginator import Paginator
 from django.http import HttpResponse
 from django.utils.timezone import now
 from django.db import transaction
+from utils.pdf_generator import SalesReportPDF
+from utils.excel_generator import SalesReportExcel
+import io
 import csv
-from datetime import datetime, timedelta
+from datetime import datetime, timezone
 from .models import Sale, Customer, SaleItem
 from .forms import SaleForm, CustomerForm, SaleItemFormSet
 
@@ -466,4 +469,82 @@ def sales_reports(request):
     
     return render(request, 'sales/reports.html', context)
 
+@login_required
+@user_passes_test(is_sales_or_manager, login_url='users:login')
+def export_sales_report(request):
+    '''Export sales report as PDF or Excel'''
+    export_format = request.GET.get('format', 'pdf')
+    date_from = request.GET.get('date_from')
+    date_to = request.GET.get('date__to')
+    
+    # Date reange filters 
+    if not date_from:
+        date_from = timezone().now.replace(day=1).date()
+    else:
+        date_from = datetime.strptime(date_from, '%Y-%m-%d').date()
+    
+    if not date_to:
+        date_to = timezone().now()
+    else:
+        date_to = datetime.strptime(date_to, '%Y-%m-%d').date()
         
+    # Get sales daa
+    sales = Sale.objects.filter(
+        sale_date__date__gte=date_from,
+        sale_date__date__lte=date_to,
+        status='COMPLETED'
+    ).select_related('customer')
+    
+    # Prepare data 
+    sales_data = []
+    for sale in sales:
+        sales_data.apped({
+            'date': sale.sale_date,
+            'customer': sale.customer.full_name,
+            'items':sale.item_count,
+            'amount':sale.total,
+            'status':sale.get_status_display()
+        })
+        
+    #Calculate summary
+    total_sales = sales.count()
+    total_revenue = sum(sale.total for sale in sales)
+    average_sale = total_revenue / total_sales if total_sales > 0 else 0
+    total_customers = Customer.objects.filter(sales__in=sales).distinct().count()
+    
+    summary = {
+        'total_sales': total_sales,
+        'total_revenue': total_revenue,
+        'average_sale': average_sale,
+        'total_customers': total_customers,
+    }
+
+    # Generate report
+    if export_format == 'pdf':
+        # Generate PDF
+        buffer = io.BytesIO()
+        pdf_generator = SalesReportPDF(date_from, date_to, sales_data, summary)
+        pdf_generator.build()
+        pdf_generator.generate(buffer)
+        buffer.seek(0)
+        
+        response = HttpResponse(buffer.read(), content_type='application/pdf')
+        filename = f'sales_report_{date_from}_{date_to}'.pdf
+        response['Content-Disposition'] = f'attachament; filename="{filename}"'
+    
+    elif export_format == 'excel':
+        # Generate Excel
+        buffer = io.BytesIO()
+        excel_generator = SalesReportExcel(date_from, date_to, sales_data, summary)
+        excel_generator.build()
+        excel_generator.save(buffer)
+        buffer.seek(0)
+        
+        response = HttpResponse(buffer.read, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        filename = f'sales_report_{date_from}_{date_to}'
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    
+    else:
+        return HttpResponse('Invalif format', status=400)
+    
+    return response
