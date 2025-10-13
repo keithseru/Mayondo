@@ -65,14 +65,14 @@ class PDFReportGenerator:
         for item in summary_data:
             row.append([
                 Paragraph(f"<b>{item['label']}</b>", self.styles['Normal']),
-                Paragraph(f"font<font size=18 color='#2c5f2d'><b>{item['value']}</b></font>", self.styles['Normal'])
+                Paragraph(f"<font size=18 color='#2c5f2d'><b>{item['value']}</b></font>", self.styles['Normal'])
             ])
             if len(row) == 2:
                 data.append(row)
                 row = []
             
         if row: #Add remianing items
-            while len(row < 2):
+            while len(row) < 2:
                 row.append(['',''])
             data.append(row)
             
@@ -191,42 +191,42 @@ class SalesReportPDF(PDFReportGenerator):
         
         return self
     
-    class InventoryReportPDF(PDFReportGenerator):
-        '''Inventory report PDF generator'''
+class InventoryReportPDF(PDFReportGenerator):
+    '''Inventory report PDF generator'''
+    
+    def __init__(self, inventory_data, summary):
+        super().__init__('Inventory Status Report')
+        self.inventory_data = inventory_data
+        self.summary = summary
         
-        def __init__(self, inventory_data, summary):
-            super().__init__('Inventory Status Report')
-            self.inventory_data = inventory_data
-            self.summary = summary
+    def build(self):
+        '''Build the inventory report'''
+        # Header
+        self.add_header()
+        
+        #summary boxes
+        summary_data = ([
+            {'label': 'Total Products', 'value': self.summary['total_products']},
+            {'label': 'Low Stock Items', 'value': self.summary['low_stock']},
+            {'label': 'Out of Stock', 'value': self.summary['out_of_stock']},
+            {'label': 'Total Value', 'value': f"UGX {self.summary['total_value']:,}"},
+        ])
+        self.add_summary_boxes(summary_data)
+        
+        # Low stock items
+        if self.inventory_data['low_stock']:
+            self.add_section_heading('Low Stock Items(Urgent Attention Required)')
+            headers = ['Product', 'Variant', 'Current Stock', 'Reorder Level', 'Status']
+            rows = []
             
-        def build(self):
-            '''Build the inventory report'''
-            # Header
-            self.add_header()
-            
-            #summary boxes
-            summary_data = ([
-                {'label': 'Total Products', 'value': self.summary['total_products']},
-                {'label': 'Low Stock Items', 'value': self.summary['low_stock']},
-                {'label': 'Out of Stock', 'value': self.summary['out_of_stock']},
-                {'label': 'Total Value', 'value': f"UGX {self.summary['total_value']:,}"},
-            ])
-            self.add_summary_boxes(summary_data)
-            
-            # Low stock items
-            if self.inventory_data['low_stock']:
-                self.add_section_heading('Low Stock Items(Urgent Attention Required)')
-                headers = ['Product', 'Variant', 'Current Stock', 'Reorder Level', 'Status']
-                rows = []
-                
-                for item in self.inventory_data['low_stock']:
-                    status = 'OUT OF STOCK' if item['stock'] == 0 else 'LOW STOCK'
-                    rows.append([
-                        item['product'],
-                        item['variant'],
-                        str(item['stock']),
-                        str(item['reorder_level']),
-                        status
-                    ])
-                self.add_table(headers, rows, col_widths=[2*inch, 1.5*inch, 1*inch, 1*inch, 1*inch])
-            return self
+            for item in self.inventory_data['low_stock']:
+                status = 'OUT OF STOCK' if item['stock'] == 0 else 'LOW STOCK'
+                rows.append([
+                    item['product'],
+                    item['variant'],
+                    str(item['stock']),
+                    str(item['reorder_level']),
+                    status
+                ])
+            self.add_table(headers, rows, col_widths=[2*inch, 1.5*inch, 1*inch, 1*inch, 1*inch])
+        return self
