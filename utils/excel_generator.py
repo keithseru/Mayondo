@@ -409,22 +409,83 @@ class InventoryReportExcel(ExcelReportGenerator):
         # Auto-adjust columns
         self.auto_adjust_columns(sheet)
 
-        # Add pie chart for stock status breakdown
+        # Add pie chart for stock status breakdown - IMPROVED VERSION
         if self.summary['low_stock'] or self.summary['out_of_stock']:
-            chart_sheet = self.create_sheet("Stock Status Chart")
-            chart_sheet['A1'] = "Status"
-            chart_sheet['B1'] = "Count"
-            chart_sheet['A2'] = "LOW STOCK"
-            chart_sheet['B2'] = self.summary['low_stock']
-            chart_sheet['A3'] = "OUT OF STOCK"
-            chart_sheet['B3'] = self.summary['out_of_stock']
-
-            chart = PieChart()
-            chart.title = "Stock Status Breakdown"
-            data = Reference(chart_sheet, min_col=2, min_row=1, max_row=3)
-            labels = Reference(chart_sheet, min_col=1, min_row=2, max_row=3)
-            chart.add_data(data, titles_from_data=True)
-            chart.set_categories(labels)
-            chart_sheet.add_chart(chart, "D2")
+            self.add_stock_status_pie_chart()
 
         return self
+    
+    def add_stock_status_pie_chart(self):
+        '''Add stock status breakdown pie chart - IMPROVED with proper formatting'''
+        chart_sheet = self.create_sheet("Stock Status Breakdown")
+
+        # Add title with proper spacing
+        chart_sheet.merge_cells('A1:B1')
+        title_cell = chart_sheet['A1']
+        title_cell.value = "Stock Status Breakdown"
+        title_cell.font = Font(size=14, bold=True)
+        title_cell.alignment = Alignment(horizontal='center')
+        
+        # Add spacing
+        chart_sheet.row_dimensions[1].height = 25
+        chart_sheet.row_dimensions[2].height = 10
+
+        # Write data to sheet starting from row 3
+        chart_sheet['A3'] = "Status"
+        chart_sheet['B3'] = "Count"
+        chart_sheet['A3'].font = Font(bold=True)
+        chart_sheet['B3'].font = Font(bold=True)
+        
+        # Adjust column widths for better visibility
+        chart_sheet.column_dimensions['A'].width = 20
+        chart_sheet.column_dimensions['B'].width = 15
+        
+        # Add borders to header row
+        thin_border = Border(
+            left=Side(style='thin'),
+            right=Side(style='thin'),
+            top=Side(style='thin'),
+            bottom=Side(style='thin')
+        )
+        chart_sheet['A3'].border = thin_border
+        chart_sheet['B3'].border = thin_border
+        
+        # Add header background color
+        header_fill = PatternFill(start_color='2C5F2D', end_color='2C5F2D', fill_type='solid')
+        chart_sheet['A3'].fill = header_fill
+        chart_sheet['B3'].fill = header_fill
+        chart_sheet['A3'].font = Font(bold=True, color='FFFFFF')
+        chart_sheet['B3'].font = Font(bold=True, color='FFFFFF')
+        
+        # Add data rows
+        chart_sheet['A4'] = "LOW STOCK"
+        chart_sheet['B4'] = self.summary['low_stock']
+        chart_sheet['A5'] = "OUT OF STOCK"
+        chart_sheet['B5'] = self.summary['out_of_stock']
+        
+        # Add borders to data cells
+        for row in [4, 5]:
+            chart_sheet[f'A{row}'].border = thin_border
+            chart_sheet[f'B{row}'].border = thin_border
+
+        # Create pie chart WITHOUT internal title
+        chart = PieChart()
+        chart.title = None  # Remove the overlapping title
+        data = Reference(chart_sheet, min_col=2, min_row=3, max_row=5)
+        labels = Reference(chart_sheet, min_col=1, min_row=4, max_row=5)
+
+        chart.add_data(data, titles_from_data=True)
+        chart.set_categories(labels)
+        
+        # Set chart dimensions - made wider to accommodate legend
+        chart.width = 18  # Increased width
+        chart.height = 12
+        
+        # Position legend to the right to avoid overlap
+        from openpyxl.chart.legend import Legend
+        chart.legend = Legend()
+        chart.legend.position = 'r'  # Right position
+        chart.legend.overlay = False  # Don't overlay on chart
+
+        # Position chart to the right with good spacing
+        chart_sheet.add_chart(chart, "D4")  # Aligned with table header
