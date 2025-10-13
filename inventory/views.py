@@ -4,6 +4,10 @@ from django.contrib import messages
 from django.db.models import Q, Sum, Count
 from django.core.paginator import Paginator
 from django.http import HttpResponse
+from utils.excel_generator import InventoryReportExcel
+from utils.pdf_generator import InventoryReportPDF
+from datetime import timezone
+import io
 import csv
 from .forms import StockEntryForm
 from .models import StockEntry, StockMovement
@@ -271,3 +275,76 @@ def inventory_reports(request):
     }
 
     return render(request, 'inventory/reports.html', context)
+
+login_required
+@user_passes_test(is_inventory_or_manager, login_url='users:login')
+def export_inventory_report(request):
+    """Export inventory report as PDF or Excel"""
+    export_format = request.GET.get('format', 'pdf')
+    
+    # Get inventory data
+    active_variants = ProductVariant.objects.filter(is_active=True)
+    
+    # Low stock items
+    low_stock_items = active_variants.filter(
+        stock_quantity__lte=10
+    ).select_related('product')
+    
+    # Prepare data
+    inventory_data = {
+        'low_stock': []
+    }
+    
+    for item in low_stock_items:
+        inventory_data['low_stock'].append({
+            'product': item.product.name,
+            'variant': item.variant_name,
+            'stock': item.stock_quantity,
+            'reorder_level': item.reorder_level,
+        })
+    
+    # Calculate summary
+    total_products = active_variants.count()
+    low_stock = low_stock_items.count()
+    out_of_stock = active_variants.filter(stock_quantity=0).count()
+    total_value = sum(v.stock_quantity * v.price for v in active_variants)
+    
+    summary = {
+        'total_products': total_products,
+        'low_stock': low_stock,
+        'out_of_stock': out_of_stock,
+        'total_value': total_value,
+    }
+    
+    # Generate report
+    if export_format == 'pdf':
+        # Generate PDF
+        buffer = io.BytesIO()
+        pdf_generator = InventoryReportPDF(inventory_data, summary)
+        pdf_generator.build()
+        pdf_generator.generate(buffer)
+        buffer.seek(0)
+        
+        response = HttpResponse(buffer.read(), content_type='application/pdf')
+        filename = f'inventory_report_{timezone.now().strftime("%Y%m%d")}.pdf'
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        
+    elif export_format == 'excel':
+        # Generate Excel
+        buffer = io.BytesIO()
+        excel_generator = InventoryReportExcel(inventory_data, summary)
+        excel_generator.build()
+        excel_generator.save(buffer)
+        buffer.seek(0)
+        
+        response = HttpResponse(
+            buffer.read(),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        filename = f'inventory_report_{timezone.now().strftime("%Y%m%d")}.xlsx'
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    
+    else:
+        return HttpResponse("Invalid format", status=400)
+    
+    return response
