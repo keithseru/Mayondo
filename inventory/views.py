@@ -4,9 +4,9 @@ from django.contrib import messages
 from django.db.models import Q, Sum, Count
 from django.core.paginator import Paginator
 from django.http import HttpResponse
+from django.utils import timezone
 from utils.excel_generator import InventoryReportExcel
 from utils.pdf_generator import InventoryReportPDF
-from datetime import timezone
 import io
 import csv
 from .forms import StockEntryForm
@@ -276,21 +276,26 @@ def inventory_reports(request):
 
     return render(request, 'inventory/reports.html', context)
 
-login_required
+@login_required
 @user_passes_test(is_inventory_or_manager, login_url='users:login')
 def export_inventory_report(request):
     """Export inventory report as PDF or Excel"""
     export_format = request.GET.get('format', 'pdf')
+    display = request.GET.get('display', 'download')
     
-    # Get inventory data
-    active_variants = ProductVariant.objects.filter(is_active=True)
+    # Get inventory data - ALL active variants
+    active_variants = ProductVariant.objects.filter(is_active=True).select_related('product', 'product__category')
     
     # Low stock items
+    low_stock_threshold = int(request.GET.get('threshold', 10))
     low_stock_items = active_variants.filter(
-        stock_quantity__lte=10
-    ).select_related('product')
+        stock_quantity__lte=low_stock_threshold
+    )
     
-    # Prepare data
+    # Out of stock items
+    out_of_stock_items = active_variants.filter(stock_quantity=0)
+    
+    # Prepare data for low stock items (for the detailed table)
     inventory_data = {
         'low_stock': []
     }
@@ -303,14 +308,100 @@ def export_inventory_report(request):
             'reorder_level': item.reorder_level,
         })
     
-    # Calculate summary
-    total_products = active_variants.count()
+    # Calculate summary - Count ALL active variants
+    total_products = active_variants.count()  # This should be 621
+    low_stock_count = low_stock_items.count()  # Items below threshold
+    out_of_stock_count = out_of_stock_items.count()  # Items with 0 stock
+    total_value = sum(v.stock_quantity * v.price for v in active_variants)
+    
+    # Debug: Print to console to verify counts
+    print(f"DEBUG - Total Products: {total_products}")
+    print(f"DEBUG - Low Stock: {low_stock_count}")
+    print(f"DEBUG - Out of Stock: {out_of_stock_count}")
+    print(f"DEBUG - Total Value: {total_value}")
+    
+    summary = {
+        'total_products': total_products,  # Should show 621
+        'low_stock': low_stock_count,
+        'out_of_stock': out_of_stock_count,
+        'total_value': total_value,
+    }
+    
+    # Generate report
+    if export_format == 'pdf':
+        # Generate PDF
+        buffer = io.BytesIO()
+        pdf_generator = InventoryReportPDF(inventory_data, summary)
+        pdf_generator.build()
+        pdf_generator.generate(buffer)
+        buffer.seek(0)
+        
+        response = HttpResponse(buffer.read(), content_type='application/pdf')
+        filename = f'inventory_report_{timezone.now().strftime("%Y%m%d")}.pdf'
+       
+        if display == 'inline':
+            response['Content-Disposition'] = f'inline; filename="{filename}"'
+        else:
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        
+    elif export_format == 'excel':
+        # Generate Excel
+        buffer = io.BytesIO()
+        excel_generator = InventoryReportExcel(inventory_data, summary)
+        excel_generator.build()
+        excel_generator.save(buffer)
+        buffer.seek(0)
+        
+        response = HttpResponse(
+            buffer.read(),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        filename = f'inventory_report_{timezone.now().strftime("%Y%m%d")}.xlsx'
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    
+    else:
+        return HttpResponse("Invalid format", status=400)
+    
+    return response
+@login_required
+@user_passes_test(is_inventory_or_manager, login_url='users:login')
+def export_inventory_report(request):
+    """Export inventory report as PDF or Excel"""
+    export_format = request.GET.get('format', 'pdf')
+    
+    # Get inventory data
+    active_variants = ProductVariant.objects.filter(is_active=True)
+    
+    # Low stock items (threshold: 10 or custom)
+    low_stock_threshold = int(request.GET.get('threshold', 10))
+    low_stock_items = active_variants.filter(
+        stock_quantity__lte=low_stock_threshold
+    ).select_related('product', 'product__category')
+    
+    # Out of stock items
+    out_of_stock_items = active_variants.filter(stock_quantity=0)
+    
+    # Prepare data for low stock items
+    inventory_data = {
+        'low_stock': []
+    }
+    
+    for item in low_stock_items:
+        inventory_data['low_stock'].append({
+            'product': item.product.name,
+            'variant': item.variant_name,
+            'stock': item.stock_quantity,
+            'reorder_level': item.reorder_level,
+        })
+    
+    # Calculate summary - FIXED: now counts ALL active products
+    total_products = active_variants.count()  # All active variants
     low_stock = low_stock_items.count()
-    out_of_stock = active_variants.filter(stock_quantity=0).count()
+    out_of_stock = out_of_stock_items.count()
     total_value = sum(v.stock_quantity * v.price for v in active_variants)
     
     summary = {
-        'total_products': total_products,
+        'total_products': total_products,  # Now shows correct total
         'low_stock': low_stock,
         'out_of_stock': out_of_stock,
         'total_value': total_value,

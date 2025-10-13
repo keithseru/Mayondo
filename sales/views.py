@@ -366,7 +366,7 @@ def delete_customer(request, pk):
 def sales_dashboard(request):
     # COMPLETED SALES ONLY
     #Today's stats
-    today = now().date()
+    today = timezone.now().date()
     today_sales = Sale.objects.filter(
         sale_date__date = today,
         status = 'COMPLETED'
@@ -407,12 +407,12 @@ def sales_reports(request):
     
     # Default to current month
     if not date_from:
-        date_from = now().replace(day=1).date()
+        date_from = timezone.now().replace(day=1).date()
     else:
         date_from = datetime.strptime(date_from, '%Y-%m-%d').date()
     
     if not date_to:
-        date_to = now().date()
+        date_to = timezone.now().date()
     else:
         date_to = datetime.strptime(date_to, '%Y-%m-%d').date()
     
@@ -475,7 +475,8 @@ def export_sales_report(request):
     '''Export sales report as PDF or Excel'''
     export_format = request.GET.get('format', 'pdf')
     date_from = request.GET.get('date_from')
-    date_to = request.GET.get('date__to')
+    date_to = request.GET.get('date_to')
+    display = request.GET.get('display', 'download')
     
     # Date reange filters 
     if not date_from:
@@ -522,7 +523,6 @@ def export_sales_report(request):
     sales = Sale.objects.filter(
         sale_date__date__gte=date_from,
         sale_date__date__lte=date_to,
-        status='COMPLETED'
     ).select_related('customer')
     
     # Prepare data 
@@ -541,12 +541,18 @@ def export_sales_report(request):
     total_revenue = sum(sale.total for sale in sales)
     average_sale = total_revenue / total_sales if total_sales > 0 else 0
     total_customers = Customer.objects.filter(sales__in=sales).distinct().count()
+    completed_sales = sales.filter(status='COMPLETED').count()
+    pending_sales = sales.filter(status='PENDING').count()
+    cancelled_sales = sales.filter(status='CANCELLED').count()
     
     summary = {
         'total_sales': total_sales,
         'total_revenue': total_revenue,
         'average_sale': average_sale,
         'total_customers': total_customers,
+        'completed_sales': completed_sales,
+        'pending_sales': pending_sales,
+        'cancelled_sales': cancelled_sales,
     }
 
     # Generate report
@@ -560,7 +566,11 @@ def export_sales_report(request):
         
         response = HttpResponse(buffer.read(), content_type='application/pdf')
         filename = f'sales_report_{date_from}_{date_to}.pdf'
-        response['Content-Disposition'] = f'attachament; filename="{filename}"'
+        
+        if display == 'inline':
+            response['Content-Disposition'] = f'inline; filename="{filename}"'
+        else:
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
     
     elif export_format == 'excel':
         # Generate Excel
@@ -570,11 +580,11 @@ def export_sales_report(request):
         excel_generator.save(buffer)
         buffer.seek(0)
         
-        response = HttpResponse(buffer.read, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-        filename = f'sales_report_{date_from}_{date_to}'
+        response = HttpResponse(buffer.read(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        filename = f'sales_report_{date_from}_{date_to}.xlsx'
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
     
     else:
-        return HttpResponse('Invalif format', status=400)
+        return HttpResponse('Invalid format', status=400)
     
     return response

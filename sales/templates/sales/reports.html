@@ -50,12 +50,12 @@
             </button>
             <ul class="dropdown-menu">
                 <li>
-                    <a class="dropdown-item" href="{% url 'sales:export_report' %}?format=pdf{% if date_from %}&date_from={{ date_from|date:'Y-m-d' }}{% endif %}{% if date_to %}&date_to={{ date_to|date:'Y-m-d' }}{% endif %}">
+                    <a class="dropdown-item" href="{% url 'sales:export_report' %}?format=pdf&display=download{% if date_from %}&date_from={{ date_from|date:'Y-m-d' }}{% endif %}{% if date_to %}&date_to={{ date_to|date:'Y-m-d' }}{% endif %}">
                         <i class="bi bi-download"></i> Download PDF
                     </a>
                 </li>
                 <li>
-                    <a class="dropdown-item" href="{% url 'sales:export_report' %}?format=pdf{% if date_from %}&date_from={{ date_from|date:'Y-m-d' }}{% endif %}{% if date_to %}&date_to={{ date_to|date:'Y-m-d' }}{% endif %}" target="_blank">
+                    <a class="dropdown-item" href="{% url 'sales:export_report' %}?format=pdf&display=inline{% if date_from %}&date_from={{ date_from|date:'Y-m-d' }}{% endif %}{% if date_to %}&date_to={{ date_to|date:'Y-m-d' }}{% endif %}" target="_blank">
                         <i class="bi bi-eye"></i> View in Browser
                     </a>
                 </li>

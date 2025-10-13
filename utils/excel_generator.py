@@ -10,7 +10,7 @@ class ExcelReportGenerator:
     def __init__(self, title):
         self.title = title
         self.workbook = Workbook()
-        self.workbook.remove(self.workbook.active) #Removethe default sheet
+        self.workbook.remove(self.workbook.active)  # Remove the default sheet
         
         # Define styles
         self.header_font = Font(name='Arial', size=14, bold=True, color='FFFFFF')
@@ -41,7 +41,7 @@ class ExcelReportGenerator:
         '''Add generation date'''
         sheet.merge_cells(f'A{row}:E{row}')
         cell = sheet[f'A{row}']
-        cell.value = f"Generated:{datetime.now().strftime('%d %B, %Y at %I:%M %p')}"
+        cell.value = f"Generated: {datetime.now().strftime('%d %B, %Y at %I:%M %p')}"
         cell.alignment = Alignment(horizontal='center')
         cell.font = Font(size=10, italic=True)
         
@@ -60,7 +60,7 @@ class ExcelReportGenerator:
         sheet.merge_cells(f'A{start_row}:B{start_row}')
         cell = sheet[f'A{start_row}']
         cell.value = 'Summary'
-        cell.font = Font(size=12, bold = True)
+        cell.font = Font(size=12, bold=True)
         
         row = start_row + 1
         for label, value in summary_data.items():
@@ -69,22 +69,38 @@ class ExcelReportGenerator:
             sheet[f'A{row}'].font = Font(bold=True)
             sheet[f'A{row}'].border = self.border
             sheet[f'B{row}'].border = self.border
+            sheet[f'A{row}'].alignment = Alignment(horizontal='left', vertical='center')
+            sheet[f'B{row}'].alignment = Alignment(horizontal='right', vertical='center')
             row += 1
         return row + 1
     
     def auto_adjust_columns(self, sheet):
-        '''Auto-adjust column widths'''
+        '''Auto-adjust column widths - Fixed for merged cells'''
+        from openpyxl.cell import MergedCell
+        
         for column in sheet.columns:
             max_length = 0
-            column_letter = column[0].column_letter
+            column_letter = None
+            
             for cell in column:
+                # Skip merged cells
+                if isinstance(cell, MergedCell):
+                    continue
+                
+                # Get column letter from first non-merged cell
+                if column_letter is None:
+                    column_letter = cell.column_letter
+                
                 try:
-                    if len(str(cell.value)) > max_length:
-                        max_length = len(cell.value)
+                    if cell.value and len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
                 except:
                     pass
-            adjused_width = min(max_length + 2, 50)
-            sheet.column_dimensions[column_letter].width = adjused_width
+            
+            # Only adjust if we found a valid column letter
+            if column_letter:
+                adjusted_width = min(max_length + 2, 50)
+                sheet.column_dimensions[column_letter].width = adjusted_width
             
     def save(self, buffer):
         '''Save the workbook to buffer'''
@@ -106,20 +122,23 @@ class SalesReportExcel(ExcelReportGenerator):
         '''Build the sales report'''
         sheet = self.create_sheet('Sales Report')
         
-        #Title
+        # Title
         self.add_title(sheet, self.title)
         self.add_date(sheet, row=2)
         
-        #Summary Section
+        # Summary Section - Updated to include all status counts
         summary_data = {
             'Total Sales': self.summary['total_sales'],
-            'Total Revenue': f"UGX {self.summary['total_revenue'],}",
+            'Total Revenue': f"UGX {self.summary['total_revenue']:,}",
             'Average Sale': f"UGX {self.summary['average_sale']:,.0f}",
             'Total Customers': self.summary['total_customers'],
+            'Completed Sales': self.summary.get('completed_sales', 0),
+            'Pending Sales': self.summary.get('pending_sales', 0),
+            'Cancelled Sales': self.summary.get('cancelled_sales', 0),
         }
         data_start_row = self.add_summary_section(sheet, summary_data, start_row=4)
         
-        #Sales data table
+        # Sales data table
         headers = ['Date', 'Customer', "Items", 'Amount(UGX)', 'Status']
         for col_num, header in enumerate(headers, 1):
             sheet.cell(row=data_start_row, column=col_num, value=header)
@@ -135,85 +154,189 @@ class SalesReportExcel(ExcelReportGenerator):
             sheet[f'E{row}'] = sale['status']
             
             # Apply borders
-            for col in range(1,6):
-                sheet.cell(row=row, column=col).border= self.border
+            for col in range(1, 6):
+                sheet.cell(row=row, column=col).border = self.border
                 
             row += 1
             
-            # Auto-adjust columns
-            self.auto_adjust_columns(sheet)
-            
-            #Add chart if we have data
-            if len(self.sales_data) > 0:
-                self.add_sales_chart(sheet, data_start_row, row - 1)
-                self.add_revenue_line_chart(sheet, data_start_row, row - 1)
-                self.add_status_pie_chart()
-            return self
+        # Auto-adjust columns
+        self.auto_adjust_columns(sheet)
         
-        def add_sales_chart(self, sheet, start_row, end_row):
-            '''Add a sales chart'''
-            #Create a new sheet for chart
-            chart_sheet =self.create_sheet('Sales Chart')
-            
-            #Create bar chart
-            chart = BarChart()
-            chart.title = 'Sales by Date'
-            chart.x_axis.title = 'Date'
-            chart.y_axis.title = 'Amount (UGx)'
-            
-            # Set data
-            data = Reference(sheet, min_col=4, min_row=start_row, max_row=end_row)
-            categories = Reference(sheet, min_col=1, min_row=start_row+1, max_row=end_row)
-            
-            chart.add_data(data, titles_from_data=True)
-            chart.set_categories(categories)
-            
-            chart_sheet.add_chart(chart, 'A1')
+        # Add charts if we have data
+        if len(self.sales_data) > 0:
+            self.add_sales_chart(sheet, data_start_row, row - 1)
+            self.add_revenue_line_chart(sheet, data_start_row, row - 1)
+            self.add_status_pie_chart()
         
-        def add_revenue_line_chart(self, sheet, start_row, end_row):
-            chart_sheet = self.create_sheet("Revenue Trend")
+        return self
+    
+    def add_sales_chart(self, sheet, start_row, end_row):
+        '''Add a sales chart with improved visuals'''
+        chart_sheet = self.create_sheet('Sales Chart')
+        
+        # Add sheet title
+        chart_sheet.merge_cells('A1:F1')
+        title_cell = chart_sheet['A1']
+        title_cell.value = "Sales by Date - Bar Chart"
+        title_cell.font = Font(size=14, bold=True)
+        title_cell.alignment = Alignment(horizontal='center')
+        chart_sheet.row_dimensions[1].height = 25
+        
+        # Create bar chart
+        chart = BarChart()
+        chart.type = "col"  # Column chart (vertical bars)
+        chart.style = 10  # Professional color scheme
+        chart.title = "Sales Revenue by Date"
+        chart.y_axis.title = 'Amount (UGX)'
+        chart.x_axis.title = 'Transaction Date'
+        
+        # Set data
+        data = Reference(sheet, min_col=4, min_row=start_row, max_row=end_row)
+        categories = Reference(sheet, min_col=1, min_row=start_row+1, max_row=end_row)
+        
+        chart.add_data(data, titles_from_data=True)
+        chart.set_categories(categories)
+        
+        # Improve chart dimensions and spacing
+        chart.width = 20  # Wider chart
+        chart.height = 12  # Taller chart
+        
+        # Rotate x-axis labels for better readability
+        chart.x_axis.tickLblPos = "low"
+        
+        # Add chart with spacing from title
+        chart_sheet.add_chart(chart, 'A3')
+    
+    def add_revenue_line_chart(self, sheet, start_row, end_row):
+        '''Add revenue trend line chart with improved visuals'''
+        chart_sheet = self.create_sheet("Revenue Trend")
+        
+        # Add sheet title
+        chart_sheet.merge_cells('A1:F1')
+        title_cell = chart_sheet['A1']
+        title_cell.value = "Revenue Trend Over Time"
+        title_cell.font = Font(size=14, bold=True)
+        title_cell.alignment = Alignment(horizontal='center')
+        chart_sheet.row_dimensions[1].height = 25
+        
+        # Create a line chart
+        chart = LineChart()
+        chart.title = 'Cumulative Revenue Trend'
+        chart.style = 12  # Professional style
+        chart.y_axis.title = "Revenue (UGX)"
+        chart.x_axis.title = "Date"
+        
+        data = Reference(sheet, min_col=4, min_row=start_row, max_row=end_row)
+        categories = Reference(sheet, min_col=1, min_row=start_row + 1, max_row=end_row)
+
+        chart.add_data(data, titles_from_data=True)
+        chart.set_categories(categories)
+        
+        # Improve chart dimensions and spacing
+        chart.width = 20  # Wider chart
+        chart.height = 12  # Taller chart
+        
+        # Style the line - do this after adding data
+        try:
+            from openpyxl.chart.marker import Marker
+            from openpyxl.drawing.line import LineProperties
+            from openpyxl.drawing.fill import SolidColorFillProperties, ColorChoice
             
-            #Create a line chart
-            chart = LineChart()
-            chart.title = 'Cumulative Revenue Over Time'
-            chart.x_axis.title = "Date"
-            chart.y_axis.title = "Revenue (UGX)"
-            chart.style = 13
+            if chart.series and len(chart.series) > 0:
+                series = chart.series[0]
+                # Add markers
+                series.marker = Marker('circle')
+                series.marker.size = 5
+                
+                # Style the line
+                line_props = LineProperties(solidFill=SolidColorFillProperties(ColorChoice(srgbClr="2C5F2D")))
+                line_props.width = 25000
+                series.graphicalProperties.line = line_props
+        except Exception as e:
+            # If styling fails, continue without it
+            pass
+        
+        # Rotate x-axis labels for better readability
+        chart.x_axis.tickLblPos = "low"
 
-            data = Reference(sheet, min_col=4, min_row=start_row, max_row=end_row)
-            categories = Reference(sheet, min_col=1, min_row=start_row + 1, max_row=end_row)
+        # Add chart with spacing from title
+        chart_sheet.add_chart(chart, "A3")
 
-            chart.add_data(data, titles_from_data=True)
-            chart.set_categories(categories)
+    def add_status_pie_chart(self):
+        '''Add status breakdown pie chart - FIXED positioning and sizing'''
+        chart_sheet = self.create_sheet("Status Breakdown")
 
-            chart_sheet.add_chart(chart, "A1")
+        # Count statuses
+        status_counts = Counter(sale['status'] for sale in self.sales_data)
 
+        # Add title with proper spacing
+        chart_sheet.merge_cells('A1:B1')
+        title_cell = chart_sheet['A1']
+        title_cell.value = "Sales Status Breakdown"
+        title_cell.font = Font(size=14, bold=True)
+        title_cell.alignment = Alignment(horizontal='center')
+        
+        # Add spacing
+        chart_sheet.row_dimensions[1].height = 25
+        chart_sheet.row_dimensions[2].height = 10
 
-        def add_status_pie_chart(self):
-            chart_sheet = self.create_sheet("Status Breakdown")
+        # Write data to sheet starting from row 3
+        chart_sheet['A3'] = "Status"
+        chart_sheet['B3'] = "Count"
+        chart_sheet['A3'].font = Font(bold=True)
+        chart_sheet['B3'].font = Font(bold=True)
+        
+        # Adjust column widths for better visibility
+        chart_sheet.column_dimensions['A'].width = 20
+        chart_sheet.column_dimensions['B'].width = 15
+        
+        # Add borders to header row
+        thin_border = Border(
+            left=Side(style='thin'),
+            right=Side(style='thin'),
+            top=Side(style='thin'),
+            bottom=Side(style='thin')
+        )
+        chart_sheet['A3'].border = thin_border
+        chart_sheet['B3'].border = thin_border
+        
+        # Add header background color
+        header_fill = PatternFill(start_color='2C5F2D', end_color='2C5F2D', fill_type='solid')
+        chart_sheet['A3'].fill = header_fill
+        chart_sheet['B3'].fill = header_fill
+        chart_sheet['A3'].font = Font(bold=True, color='FFFFFF')
+        chart_sheet['B3'].font = Font(bold=True, color='FFFFFF')
+        
+        row = 4
+        for status, count in status_counts.items():
+            chart_sheet[f'A{row}'] = status
+            chart_sheet[f'B{row}'] = count
+            # Add borders to data cells
+            chart_sheet[f'A{row}'].border = thin_border
+            chart_sheet[f'B{row}'].border = thin_border
+            row += 1
 
-            # Count statuses
-            status_counts = Counter(sale['status'] for sale in self.sales_data)
+        # Create pie chart WITHOUT internal title
+        chart = PieChart()
+        chart.title = None  # Remove the overlapping title
+        data = Reference(chart_sheet, min_col=2, min_row=3, max_row=row - 1)
+        labels = Reference(chart_sheet, min_col=1, min_row=4, max_row=row - 1)
 
-            # Write data to sheet
-            chart_sheet['A1'] = "Status"
-            chart_sheet['B1'] = "Count"
-            row = 2
-            for status, count in status_counts.items():
-                chart_sheet[f'A{row}'] = status
-                chart_sheet[f'B{row}'] = count
-                row += 1
+        chart.add_data(data, titles_from_data=True)
+        chart.set_categories(labels)
+        
+        # Set chart dimensions - made wider to accommodate legend
+        chart.width = 18  # Increased width
+        chart.height = 12
+        
+        # Position legend to the right to avoid overlap
+        from openpyxl.chart.legend import Legend
+        chart.legend = Legend()
+        chart.legend.position = 'r'  # Right position
+        chart.legend.overlay = False  # Don't overlay on chart
 
-            # Create pie chart
-            chart = PieChart()
-            chart.title = "Sales Status Breakdown"
-            data = Reference(chart_sheet, min_col=2, min_row=1, max_row=row - 1)
-            labels = Reference(chart_sheet, min_col=1, min_row=2, max_row=row - 1)
-
-            chart.add_data(data, titles_from_data=True)
-            chart.set_categories(labels)
-
-            chart_sheet.add_chart(chart, "D2")
+        # Position chart to the right with good spacing
+        chart_sheet.add_chart(chart, "D4")  # Aligned with table header
 
 class InventoryReportExcel(ExcelReportGenerator):
     """Inventory report Excel generator"""
@@ -234,10 +357,10 @@ class InventoryReportExcel(ExcelReportGenerator):
 
         # Summary section
         summary_data = {
-            'Total Products': self.summary['total_products'],
-            'Low Stock Items': self.summary['low_stock'],
-            'Out of Stock': self.summary['out_of_stock'],
-            'Total Inventory Value': f"UGX {self.summary['total_value']:,}",
+            'Total Products:': self.summary['total_products'],
+            'Low Stock Items:': self.summary['low_stock'],
+            'Out of Stock:': self.summary['out_of_stock'],
+            'Total Inventory Value:': f"UGX {self.summary['total_value']:,.0f}",
         }
         data_start_row = self.add_summary_section(sheet, summary_data, start_row=4)
 
@@ -270,9 +393,15 @@ class InventoryReportExcel(ExcelReportGenerator):
             if item['stock'] < item['reorder_level']:
                 sheet[f'C{row}'].fill = PatternFill(start_color='FFFF00', end_color='FFFF00', fill_type='solid')
 
-            # Apply borders
+            # Apply borders and alignment
             for col in range(1, 6):
-                sheet.cell(row=row, column=col).border = self.border
+                cell = sheet.cell(row=row, column=col)
+                cell.border = self.border
+                cell.alignment = Alignment(horizontal='left', vertical='center')
+            
+            # Center-align numeric columns
+            sheet.cell(row=row, column=3).alignment = Alignment(horizontal='center', vertical='center')
+            sheet.cell(row=row, column=4).alignment = Alignment(horizontal='center', vertical='center')
 
             row += 1
 
