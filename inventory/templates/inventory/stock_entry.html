@@ -28,15 +28,90 @@
     </div>
     
     <div class="col-lg-4">
+        <!-- Main Instructions Card -->
         <div class="card bg-light">
             <div class="card-body">
                 <h6 class="card-title"><i class="bi bi-info-circle"></i> Instructions</h6>
                 <ul class="small mb-0">
-                    <li>Select the product variant</li>
-                    <li>Enter <strong>positive numbers</strong> to add stock</li>
-                    <li>Enter <strong>negative numbers</strong> to reduce stock</li>
-                    <li>Choose the appropriate entry type</li>
-                    <li>Add notes for reference (optional)</li>
+                    <li><strong>Select Product Variant:</strong> Choose the item to update</li>
+                    <li><strong>Enter Quantity:</strong> 
+                        <ul class="mt-1">
+                            <li>Positive numbers (e.g., <code>50</code>) = Add stock</li>
+                            <li>Negative numbers (e.g., <code>-10</code>) = Reduce stock</li>
+                        </ul>
+                    </li>
+                    <li><strong>Entry Types:</strong>
+                        <ul class="mt-1">
+                            <li><span class="badge bg-success">Addition</span> - New stock received (auto-adds)</li>
+                            <li><span class="badge bg-primary">Return</span> - Customer returns (auto-adds)</li>
+                            <li><span class="badge bg-danger">Damage</span> - Damaged goods (auto-deducts)</li>
+                            <li><span class="badge bg-secondary">Adjustment</span> - Manual correction</li>
+                            <li><span class="badge bg-warning text-dark">Correction</span> - Inventory count fix</li>
+                        </ul>
+                    </li>
+                    <li><strong>Notes:</strong> Add reason for entry (recommended)</li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Important Notice Card -->
+        <div class="card mt-3 border-warning">
+            <div class="card-body">
+                <h6 class="text-warning">
+                    <i class="bi bi-exclamation-triangle-fill"></i> Important
+                </h6>
+                <ul class="small mb-0">
+                    <li><strong>DAMAGE entries:</strong> System automatically deducts from stock, even if you enter a positive number</li>
+                    <li><strong>ADDITION/RETURN entries:</strong> System automatically adds to stock</li>
+                    <li><strong>Negative stock prevention:</strong> System will reject entries that would make stock negative</li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Examples Card -->
+        <div class="card mt-3 bg-info text-white">
+            <div class="card-body">
+                <h6 class="card-title">
+                    <i class="bi bi-lightbulb-fill"></i> Examples
+                </h6>
+                <div class="small">
+                    <p class="mb-2"><strong>Scenario 1: Received new stock</strong></p>
+                    <ul class="mb-3">
+                        <li>Quantity: <code>100</code></li>
+                        <li>Type: Stock Addition</li>
+                        <li>Result: +100 units</li>
+                    </ul>
+                    
+                    <p class="mb-2"><strong>Scenario 2: Found damaged items</strong></p>
+                    <ul class="mb-3">
+                        <li>Quantity: <code>5</code> (enter positive)</li>
+                        <li>Type: Damaged Goods</li>
+                        <li>Result: -5 units (auto-deducted)</li>
+                    </ul>
+                    
+                    <p class="mb-2"><strong>Scenario 3: Manual reduction</strong></p>
+                    <ul class="mb-0">
+                        <li>Quantity: <code>-8</code></li>
+                        <li>Type: Stock Adjustment</li>
+                        <li>Result: -8 units</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tips Card -->
+        <div class="card mt-3">
+            <div class="card-body">
+                <h6 class="card-title">
+                    <i class="bi bi-star-fill text-warning"></i> Best Practices
+                </h6>
+                <ul class="small mb-0">
+                    <li>Always add notes explaining the reason for stock changes</li>
+                    <li>Use <strong>Damage</strong> type for broken/spoiled items</li>
+                    <li>Use <strong>Return</strong> type for customer returns</li>
+                    <li>Use <strong>Addition</strong> type when receiving new stock</li>
+                    <li>Use <strong>Correction</strong> type for inventory count fixes</li>
+                    <li>Double-check quantity before submitting</li>
                 </ul>
             </div>
         </div>

@@ -27,23 +27,34 @@ def stock_entry(request):
             entry = form.save(commit=False)
             entry.entered_by = request.user
 
-            # Normalize quantity based on entry type
+            # Get the quantity and entry type
             qty = entry.quantity
             entry_type = entry.entry_type
 
+            # Normalize quantity based on entry type
+            # DAMAGE should always reduce stock (negative)
             if entry_type == 'DAMAGE':
-                qty = -abs(qty)  # Always subtract
+                qty = -abs(qty)  # Force negative
+            # ADDITION and RETURN should always add stock (positive)
             elif entry_type in ['ADDITION', 'RETURN']:
-                qty = abs(qty)   # Always add
-            elif entry_type in ['ADJUSTMENT', 'CORRECTION']:
-                qty = qty        # Can be positive or negative
-            else:
-                messages.error(request, "Unknown entry type.")
+                qty = abs(qty)   # Force positive
+            # ADJUSTMENT and CORRECTION can be either positive or negative
+            # User's input is respected
+
+            # Validate stock won't go negative
+            variant = entry.variant
+            new_stock = variant.stock_quantity + qty
+            
+            if new_stock < 0:
+                messages.error(
+                    request,
+                    f'Cannot process entry. Stock would become negative ({new_stock}). '
+                    f'Current stock: {variant.stock_quantity}'
+                )
                 return redirect('inventory:stock_entry')
 
-            # Apply to variant
-            variant = entry.variant
-            variant.stock_quantity += qty
+            # Update stock
+            variant.stock_quantity = new_stock
             variant.save()
 
             # Save entry with normalized quantity
@@ -51,10 +62,10 @@ def stock_entry(request):
             entry.save()
 
             # Feedback message
+            action = "added to" if qty > 0 else "deducted from"
             messages.success(
                 request,
-                f'Stock entry recorded: {entry.variant} '
-                f'{"+" if qty > 0 else ""}{qty} units'
+                f'Stock entry recorded: {abs(qty)} units {action} {entry.variant}'
             )
             return redirect('inventory:stock_list')
     else:

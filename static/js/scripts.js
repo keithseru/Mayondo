@@ -23,9 +23,20 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize currency formatting
     initializeCurrencyFormatting();
 
-    // Only prevent negative values on input
+    // Only prevent negative values on inputs NOT marked with .allow-negative
     const numberInputs = document.querySelectorAll('input[type="number"]:not(.allow-negative)');
     numberInputs.forEach(input => {
+        // Check if this is a stock entry quantity field - allow negatives
+        const isStockQuantity = input.name && input.name.includes('quantity');
+        const isStockEntry = window.location.pathname.includes('stock_entry') || 
+                            window.location.pathname.includes('inventory/entry');
+        
+        // Don't prevent negatives for stock entry quantity fields
+        if (isStockEntry && isStockQuantity) {
+            return; // Skip validation for stock entry quantities
+        }
+        
+        // Prevent negatives for other number inputs
         input.addEventListener('input', function() {
             if (parseFloat(this.value) < 0) {
                 this.value = '';

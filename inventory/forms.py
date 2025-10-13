@@ -9,11 +9,15 @@ class StockEntryForm(forms.ModelForm):
         model = StockEntry
         fields = ['variant', 'quantity', 'entry_type', 'notes']
         widgets = {
-            'quantity': forms.NumberInput(attrs={'min': '-9999', 'step': '1', 'class': 'allow_negative'}),
+            'quantity': forms.NumberInput(attrs={
+                'step': '1', 
+                'class': 'form-control'
+                # Removed 'min' to allow negative numbers
+            }),
             'notes': forms.Textarea(attrs={'rows': 3}),
         }
         help_texts = {
-            'quantity': 'Enter positive number to add stock, negative number to reduce stock',
+            'quantity': 'Enter quantity: positive for additions, negative for reductions',
         }
     
     def __init__(self, *args, **kwargs):
@@ -44,32 +48,22 @@ class StockEntryForm(forms.ModelForm):
     
     def clean_quantity(self):
         quantity = self.cleaned_data.get('quantity')
-        variant = self.cleaned_data.get('variant')
-        entry_type = self.cleaned_data.get('entry_type')
 
         if quantity == 0:
             raise forms.ValidationError('Quantity cannot be zero.')
 
-        if not variant or not entry_type:
-            return quantity  # Skip validation if missing context
+        return quantity
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        quantity = cleaned_data.get('quantity')
+        variant = cleaned_data.get('variant')
+        entry_type = cleaned_data.get('entry_type')
 
-        # Validate direction based on entry type
-        if entry_type == 'DAMAGE' and quantity > 0:
-            raise forms.ValidationError('Damaged goods must be entered as a negative quantity.')
-        if entry_type == 'RETURN' and quantity < 0:
-            raise forms.ValidationError('Customer returns must be entered as a positive quantity.')
-        if entry_type == 'ADDITION' and quantity < 0:
-            raise forms.ValidationError('Stock additions must be positive.')
-        if entry_type == 'CORRECTION':
-            # Allow both directions, but validate against stock
-            new_stock = variant.stock_quantity + quantity
-            if new_stock < 0:
-                raise forms.ValidationError(
-                    f'Correction would result in negative stock ({new_stock}). '
-                    f'Current stock is {variant.stock_quantity}.'
-                )
-
-        # General check for any negative adjustment
+        if not variant or not entry_type or quantity is None:
+            return cleaned_data
+        
+        # For negative adjustments, check if stock would go negative
         if quantity < 0:
             new_stock = variant.stock_quantity + quantity
             if new_stock < 0:
@@ -78,5 +72,5 @@ class StockEntryForm(forms.ModelForm):
                     f'Current stock is {variant.stock_quantity}. '
                     f'This would result in negative stock ({new_stock}).'
                 )
-
-        return quantity
+        
+        return cleaned_data
