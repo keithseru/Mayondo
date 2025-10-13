@@ -357,7 +357,8 @@ class InventoryReportExcel(ExcelReportGenerator):
 
         # Summary section
         summary_data = {
-            'Total Products:': self.summary['total_products'],
+            'Total Products:': self.summary['total_items'],
+            'Total Variants:': self.summary['total_variants'],
             'Low Stock Items:': self.summary['low_stock'],
             'Out of Stock:': self.summary['out_of_stock'],
             'Total Inventory Value:': f"UGX {self.summary['total_value']:,.0f}",

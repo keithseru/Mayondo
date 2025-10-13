@@ -229,7 +229,8 @@ class InventoryReportPDF(PDFReportGenerator):
         
         # Summary boxes - FIXED
         summary_data = [
-            {'label': 'Total Products:', 'value': str(self.summary['total_products'])},
+            {'label': 'Total Products:', 'value': str(self.summary['total_items'])},
+            {'label': 'Total Variants:', 'value': str(self.summary['total_variants'])},
             {'label': 'Low Stock Items:', 'value': str(self.summary['low_stock'])},
             {'label': 'Out of Stock:', 'value': str(self.summary['out_of_stock'])},
             {'label': 'Total Value:', 'value': f"UGX {self.summary['total_value']:,.0f}"},

@@ -258,11 +258,7 @@ def export_inventory_report(request):
     active_variants = ProductVariant.objects.filter(is_active=True).select_related('product', 'product__category')
     
     # Count unique products (not variants)
-    from products.models import Product
-    total_products = Product.objects.filter(
-        is_active=True,
-        variants__is_active=True
-    ).distinct().count()
+    total_items_in_inventory = sum(v.stock_quantity for v in active_variants)
     
     # Count total variants
     total_variants = active_variants.count()
@@ -296,10 +292,9 @@ def export_inventory_report(request):
     total_value = sum(v.stock_quantity * v.price for v in active_variants)
     
     # Build summary dictionary with ALL counts
-    summary = {
-        'total_products': total_products,        # Unique products (e.g., 20)
-        'total_variants': total_variants,        # Total variants (e.g., 26)
-        'total_items': total_items_in_stock,     # Total items in stock (e.g., 621)
+    summary = {      
+        'total_variants': total_variants,       
+        'total_items': total_items_in_inventory,     
         'low_stock': low_stock_count,
         'out_of_stock': out_of_stock_count,
         'total_value': total_value,
