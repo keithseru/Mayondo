@@ -19,5 +19,6 @@ urlpatterns = [
     
     # Reports
     path('reports/', views.sales_reports, name='reports'),
+    path('reports/export/', views.export_sales_report, name='export_report'),
     path('dashboard/', views.sales_dashboard, name='dashboard'),
 ]

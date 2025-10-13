@@ -11,6 +11,7 @@ urlpatterns = [
     # Dashboard and Reports
     path('dashboard/', views.inventory_dashboard, name='dashboard'),
     path('reports/', views.inventory_reports, name='reports'),
+    path('reports/export/', views.export_inventory_report, name='export_report'),
     
     # Stock Movements (Audit Trail)
     path('movements/', views.stock_movements, name='stock_movements'),
